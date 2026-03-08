@@ -1,7 +1,7 @@
 {
-  "stage": "dev",
-  "completeness": 85,
-  "summary": "完成 P0 核心功能實作：渲染引擎、物理系統、玩家控制、武器系統、敵人AI、波次管理、拾取系統、HUD、選單、觸控控制、PWA支援",
-  "next_action": "進入 test 階段，撰寫單元測試與整合測試",
-  "updated_at": "2026-03-08T00:35:00.000Z"
+  "stage": "test",
+  "completeness": 70,
+  "summary": "完成單元測試框架建置與核心模組測試：282個測試全數通過，覆蓋率：utils 99%、data 96%、Weapon 93%、WaveManager 82%、Enemy 69%",
+  "next_action": "補充 Engine、UI 模組的整合測試，達到 80% 整體覆蓋率目標後進入 security 階段",
+  "updated_at": "2026-03-08T00:52:00.000Z"
 }
