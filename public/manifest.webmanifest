@@ -1,0 +1,22 @@
+{
+  "name": "OpenClaw FPS",
+  "short_name": "OpenClaw",
+  "description": "網頁第一人稱射擊遊戲",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "theme_color": "#0A0E17",
+  "background_color": "#0A0E17",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

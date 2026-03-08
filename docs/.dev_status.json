@@ -1,7 +1,7 @@
 {
-  "stage": "sa_sd",
-  "completeness": 100,
-  "summary": "完成 SA/SD 文件，包含系統架構圖、元件職責、資料流、模組介面定義、配置規格",
-  "next_action": "進入 dev 階段，根據 SD 規格實作遊戲功能",
-  "updated_at": "2026-03-07T16:10:30.157Z"
+  "stage": "dev",
+  "completeness": 85,
+  "summary": "完成 P0 核心功能實作：渲染引擎、物理系統、玩家控制、武器系統、敵人AI、波次管理、拾取系統、HUD、選單、觸控控制、PWA支援",
+  "next_action": "進入 test 階段，撰寫單元測試與整合測試",
+  "updated_at": "2026-03-08T00:35:00.000Z"
 }
