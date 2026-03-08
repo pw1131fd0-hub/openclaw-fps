@@ -1,9 +1,9 @@
 {
-  "deployed_at": "2026-03-08T01:14:50.000Z",
-  "method": "vite preview",
-  "ports": [3001],
-  "urls": ["http://localhost:3001"],
-  "pid_or_container": "2098776",
+  "deployed_at": "2026-03-08T01:30:14.712Z",
+  "method": "npm (vite preview)",
+  "ports": [3003],
+  "urls": ["http://localhost:3003"],
+  "pid_or_container": "2099290",
   "status": "running",
   "error": null
 }
