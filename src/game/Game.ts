@@ -93,7 +93,10 @@ export class Game {
     this.updateLoadingProgress(10, '初始化音效系統...');
 
     // Initialize audio
-    await this.audio.init();
+    const audioInitialized = await this.audio.init();
+    if (!audioInitialized) {
+      console.warn('Audio system failed to initialize, playing in silent mode');
+    }
     this.updateLoadingProgress(30, '建構競技場...');
 
     // Build arena
@@ -275,7 +278,13 @@ export class Game {
   private setupInputCallbacks(): void {
     this.input.onPointerLockChangeCallback((locked) => {
       if (!locked && this._state === 'playing') {
-        this.pause();
+        // 不自動暫停，只是重新請求 pointer lock
+        // 玩家按 Esc 才會觸發暫停（透過 pause action）
+        setTimeout(() => {
+          if (this._state === 'playing') {
+            this.input.requestPointerLock();
+          }
+        }, 100);
       }
     });
 
@@ -295,6 +304,7 @@ export class Game {
     this.audio.setMusicVolume(settings.musicVolume);
     this.input.setSensitivity(settings.mouseSensitivity);
     this.input.setInvertY(settings.invertY);
+    this.renderer.setQuality(settings.graphicsQuality);
   }
 
   public get state(): GameState {
@@ -306,6 +316,7 @@ export class Game {
   }
 
   public start(): void {
+    console.log('🦞 Game starting...');
     this._state = 'playing';
     this._stats = this.createEmptyStats();
 
@@ -313,10 +324,14 @@ export class Game {
     this.hud.show();
 
     if (this.input.isTouchDevice) {
+      console.log('🦞 Touch device detected');
       this.touchControls.show();
     } else {
+      console.log('🦞 Desktop device detected, requesting pointer lock');
       this.input.requestPointerLock();
     }
+    
+    // ...
 
     // Reset player
     this.player.reset(ARENA_MAP.playerSpawn.position);

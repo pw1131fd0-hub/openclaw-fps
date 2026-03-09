@@ -5,6 +5,7 @@ import { AudioManager } from '@/engine/AudioManager';
 import { Enemy } from './Enemy';
 import { ObjectPool } from '@/utils/ObjectPool';
 import { randomElement, shuffleArray } from '@/utils/MathUtils';
+import * as THREE from 'three';
 
 export class WaveManager {
   private physics: Physics;
@@ -16,7 +17,8 @@ export class WaveManager {
   private _isWaveActive: boolean = false;
   private _score: number = 0;
 
-  private enemyPool: ObjectPool<Enemy>;
+  private meleePool: ObjectPool<Enemy>;
+  private rangedPool: ObjectPool<Enemy>;
   private activeEnemies: Enemy[] = [];
   private spawnPoints: Vector3[] = [];
   private spawnQueue: { type: EnemyType; delay: number }[] = [];
@@ -37,11 +39,16 @@ export class WaveManager {
     this.audio = audio;
     this.scene = scene;
 
-    // Create enemy pool
-    this.enemyPool = new ObjectPool<Enemy>(
+    // Create enemy pools
+    this.meleePool = new ObjectPool<Enemy>(
       () => this.createEnemy('melee'),
       (enemy) => enemy.reset(),
       10
+    );
+    this.rangedPool = new ObjectPool<Enemy>(
+      () => this.createEnemy('ranged'),
+      (enemy) => enemy.reset(),
+      5
     );
   }
 
@@ -144,14 +151,10 @@ export class WaveManager {
     // Get a random spawn point
     const spawnPoint = randomElement(this.spawnPoints);
 
-    // Get or create enemy from pool
-    let enemy: Enemy;
-    if (type === 'melee') {
-      enemy = this.enemyPool.acquire();
-    } else {
-      // For ranged enemies, create new ones (could optimize with separate pool)
-      enemy = this.createEnemy('ranged');
-    }
+    // Get enemy from pool
+    const enemy = type === 'melee' 
+      ? this.meleePool.acquire() 
+      : this.rangedPool.acquire();
 
     // Spawn the enemy
     enemy.spawn(
@@ -173,9 +176,11 @@ export class WaveManager {
       this.activeEnemies.splice(index, 1);
     }
 
-    // Return to pool if melee
+    // Return to pool
     if (enemy.type === 'melee') {
-      this.enemyPool.release(enemy);
+      this.meleePool.release(enemy);
+    } else {
+      this.rangedPool.release(enemy);
     }
 
     if (this.onEnemyDeathCallback) {
@@ -246,12 +251,12 @@ export class WaveManager {
       this.spawnTimer = null;
     }
 
-    // Reset all enemies
+    // Reset and return all active enemies to their pools
     this.activeEnemies.forEach((enemy) => {
       if (enemy.type === 'melee') {
-        this.enemyPool.release(enemy);
+        this.meleePool.release(enemy);
       } else {
-        enemy.dispose();
+        this.rangedPool.release(enemy);
       }
     });
     this.activeEnemies = [];
@@ -265,9 +270,7 @@ export class WaveManager {
 
   public dispose(): void {
     this.reset();
-    this.enemyPool.releaseAll();
+    this.meleePool.releaseAll();
+    this.rangedPool.releaseAll();
   }
 }
-
-// Import THREE at top level for type
-import * as THREE from 'three';

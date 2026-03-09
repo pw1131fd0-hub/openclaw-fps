@@ -159,8 +159,15 @@ export class InputManager {
 
   public requestPointerLock(): void {
     const canvas = document.getElementById('game-canvas');
-    if (canvas) {
-      canvas.requestPointerLock();
+    if (canvas && !this._isPointerLocked) {
+      const promise = canvas.requestPointerLock() as any;
+      if (promise && promise.catch) {
+        promise.catch((error: Error) => {
+          if (error.name !== 'SecurityError') {
+            console.error('Pointer lock failed:', error);
+          }
+        });
+      }
     }
   }
 

@@ -164,6 +164,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   invertY: false,
   showFPS: false,
   touchControlsEnabled: true,
+  graphicsQuality: 'high',
 };
 
 // Arena map configuration

@@ -18,7 +18,7 @@ export class AudioManager {
     return this._volume;
   }
 
-  public async init(): Promise<void> {
+  public async init(): Promise<boolean> {
     try {
       this.audioContext = new AudioContext();
       this.masterGain = this.audioContext.createGain();
@@ -31,8 +31,10 @@ export class AudioManager {
 
       this.sfxGain.gain.value = this._volume;
       this.musicGain.gain.value = this._musicVolume;
+      return true;
     } catch (error) {
       console.warn('AudioContext not available:', error);
+      return false;
     }
   }
 

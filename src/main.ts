@@ -12,12 +12,22 @@ function checkWebGLSupport(): boolean {
 }
 
 // Show error screen
-function showError(): void {
+function showError(title?: string, message?: string): void {
   const loadingScreen = document.getElementById('loading-screen');
   const errorScreen = document.getElementById('error-screen');
   
+  if (errorScreen) {
+    if (title) {
+      const h1 = errorScreen.querySelector('h1');
+      if (h1) h1.textContent = title;
+    }
+    if (message) {
+      const p = errorScreen.querySelector('p');
+      if (p) p.textContent = message;
+    }
+    errorScreen.style.display = 'flex';
+  }
   if (loadingScreen) loadingScreen.style.display = 'none';
-  if (errorScreen) errorScreen.style.display = 'flex';
 }
 
 // Main initialization
@@ -33,8 +43,9 @@ async function main(): Promise<void> {
   const uiContainer = document.getElementById('ui-container') as HTMLElement;
 
   if (!canvas || !uiContainer) {
-    console.error('Required DOM elements not found');
-    showError();
+    const errorMsg = '找不到必要的 DOM 元素 (game-canvas 或 ui-container)';
+    console.error(errorMsg);
+    showError('系統錯誤', errorMsg);
     return;
   }
 
@@ -44,7 +55,6 @@ async function main(): Promise<void> {
     await game.init();
 
     // Expose game instance for debugging (development only)
-    // @ts-ignore - import.meta.env is Vite-specific
     if (typeof import.meta.env !== 'undefined' && import.meta.env.DEV) {
       (window as unknown as { game: Game }).game = game;
     }
@@ -62,8 +72,9 @@ async function main(): Promise<void> {
     });
 
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
     console.error('Failed to initialize game:', error);
-    showError();
+    showError('初始化失敗', `遊戲初始化過程中發生錯誤: ${errorMsg}`);
   }
 }
 

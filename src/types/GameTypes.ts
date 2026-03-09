@@ -98,6 +98,7 @@ export interface GameSettings {
   invertY: boolean;
   showFPS: boolean;
   touchControlsEnabled: boolean;
+  graphicsQuality: 'low' | 'medium' | 'high';
 }
 
 // High score entry

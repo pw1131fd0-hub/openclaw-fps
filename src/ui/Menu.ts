@@ -215,6 +215,17 @@ export class Menu {
         left: 26px;
       }
       
+      .settings-select {
+        background: ${colorToCSS(COLORS.surface)};
+        color: ${colorToCSS(COLORS.textPrimary)};
+        border: 2px solid ${colorToCSS(COLORS.primary)};
+        border-radius: 4px;
+        padding: 5px 10px;
+        font-family: 'Inter', sans-serif;
+        outline: none;
+        cursor: pointer;
+      }
+      
       .click-prompt {
         position: absolute;
         bottom: -60px;
@@ -347,6 +358,15 @@ export class Menu {
             <div class="settings-toggle ${this.settings.showFPS ? 'active' : ''}" 
                  id="show-fps"></div>
           </div>
+
+          <div class="settings-label">
+            <span>畫面品質</span>
+            <select class="settings-select" id="graphics-quality">
+              <option value="low" ${this.settings.graphicsQuality === 'low' ? 'selected' : ''}>低 (效能優先)</option>
+              <option value="medium" ${this.settings.graphicsQuality === 'medium' ? 'selected' : ''}>中 (均衡)</option>
+              <option value="high" ${this.settings.graphicsQuality === 'high' ? 'selected' : ''}>高 (高品質陰影)</option>
+            </select>
+          </div>
         </div>
         
         <button class="menu-button primary" id="btn-back">返回</button>
@@ -378,6 +398,14 @@ export class Menu {
       this.settings.showFPS = active;
       this.notifySettingsChange();
     });
+
+    const qualitySelect = document.getElementById('graphics-quality') as HTMLSelectElement;
+    if (qualitySelect) {
+      qualitySelect.addEventListener('change', () => {
+        this.settings.graphicsQuality = qualitySelect.value as 'low' | 'medium' | 'high';
+        this.notifySettingsChange();
+      });
+    }
 
     this.bindButton('btn-back', () => {
       if (previousScreen === 'main') {

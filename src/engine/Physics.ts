@@ -56,16 +56,22 @@ export class Physics {
     return this.bodies.get(id);
   }
 
-  public raycast(from: Vector3, to: Vector3): RaycastResult {
+  public raycast(
+    from: Vector3,
+    to: Vector3,
+    options: { collisionFilterMask?: number; skipBackfaces?: boolean } = {}
+  ): RaycastResult {
     const rayFrom = new CANNON.Vec3(from.x, from.y, from.z);
     const rayTo = new CANNON.Vec3(to.x, to.y, to.z);
 
     const result = new CANNON.RaycastResult();
     const ray = new CANNON.Ray(rayFrom, rayTo);
+    
     ray.intersectWorld(this.world, {
       mode: CANNON.Ray.CLOSEST,
       result: result,
-      skipBackfaces: true,
+      skipBackfaces: options.skipBackfaces !== undefined ? options.skipBackfaces : true,
+      collisionFilterMask: options.collisionFilterMask !== undefined ? options.collisionFilterMask : -1,
     });
 
     if (result.hasHit) {
@@ -89,7 +95,11 @@ export class Physics {
     return { hit: false };
   }
 
-  public raycastAll(from: Vector3, to: Vector3): RaycastResult[] {
+  public raycastAll(
+    from: Vector3,
+    to: Vector3,
+    options: { collisionFilterMask?: number; skipBackfaces?: boolean } = {}
+  ): RaycastResult[] {
     const rayFrom = new CANNON.Vec3(from.x, from.y, from.z);
     const rayTo = new CANNON.Vec3(to.x, to.y, to.z);
     const results: RaycastResult[] = [];
@@ -97,7 +107,8 @@ export class Physics {
     const ray = new CANNON.Ray(rayFrom, rayTo);
     ray.intersectWorld(this.world, {
       mode: CANNON.Ray.ALL,
-      skipBackfaces: true,
+      skipBackfaces: options.skipBackfaces !== undefined ? options.skipBackfaces : true,
+      collisionFilterMask: options.collisionFilterMask !== undefined ? options.collisionFilterMask : -1,
       callback: (result: CANNON.RaycastResult) => {
         results.push({
           hit: true,

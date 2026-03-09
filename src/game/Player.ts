@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Vector3, WeaponType, HitResult } from '@/types/GameTypes';
 import { PLAYER_CONFIG } from '@/data/Config';
-import { Physics } from '@/engine/Physics';
+import { Physics, COLLISION_GROUPS } from '@/engine/Physics';
 import { InputManager } from '@/engine/InputManager';
 import { AudioManager } from '@/engine/AudioManager';
 import { Weapon } from './Weapon';
@@ -28,6 +28,8 @@ export class Player {
   private canJump: boolean = true;
   // Used for ground detection
   private _isGrounded: boolean = false;
+  private coyoteTime: number = 0;
+  private readonly MAX_COYOTE_TIME: number = 0.15;
 
   private onDeathCallback?: () => void;
   private onDamageCallback?: (amount: number, fromDirection?: Vector3) => void;
@@ -64,9 +66,6 @@ export class Player {
 
     // Create weapons
     this.initWeapons();
-
-    // Setup collision detection for ground check
-    this.body.addEventListener('collide', this.onCollide.bind(this));
   }
 
   private initWeapons(): void {
@@ -86,18 +85,6 @@ export class Player {
       );
       this.weapons.set(type, weapon);
     });
-  }
-
-  private onCollide(event: { body: CANNON.Body; contact: CANNON.ContactEquation }): void {
-    // Check if collision is from below (ground contact)
-    const contact = event.contact;
-    const normal = contact.ni;
-
-    // If normal points upward, we're on ground
-    if (normal.y > 0.5) {
-      this._isGrounded = true;
-      this.canJump = true;
-    }
   }
 
   public get position(): Vector3 {
@@ -139,6 +126,7 @@ export class Player {
   public update(delta: number): void {
     if (!this._isAlive) return;
 
+    this.checkGrounded(delta);
     this.handleInput(delta);
     this.syncWithPhysics();
     this.updateCamera();
@@ -148,21 +136,47 @@ export class Player {
     if (weapon) {
       weapon.update(delta);
     }
+  }
 
-    // Reset grounded state (will be set by collision)
-    this._isGrounded = false;
+  private checkGrounded(delta: number): void {
+    const rayStart = {
+      x: this.body.position.x,
+      y: this.body.position.y - PLAYER_CONFIG.height / 2 + 0.1,
+      z: this.body.position.z,
+    };
+    const rayEnd = {
+      x: this.body.position.x,
+      y: this.body.position.y - PLAYER_CONFIG.height / 2 - 0.2,
+      z: this.body.position.z,
+    };
+
+    const result = this.physics.raycast(rayStart, rayEnd, {
+      collisionFilterMask: COLLISION_GROUPS.WORLD,
+    });
+
+    if (result.hit) {
+      this._isGrounded = true;
+      this.canJump = true;
+      this.coyoteTime = this.MAX_COYOTE_TIME;
+    } else {
+      this._isGrounded = false;
+      this.coyoteTime -= delta;
+      if (this.coyoteTime <= 0) {
+        this.canJump = false;
+      }
+    }
   }
 
   private handleInput(delta: number): void {
-    if (!this.input.isPointerLocked) return;
+    // Mouse look (only when pointer is locked)
+    if (this.input.isPointerLocked) {
+      const mouseDelta = this.input.getMouseDelta();
+      this._rotation.yaw -= mouseDelta.x;
+      this._rotation.pitch -= mouseDelta.y;
+      this._rotation.pitch = clamp(this._rotation.pitch, -HALF_PI + 0.1, HALF_PI - 0.1);
+    }
 
-    // Mouse look
-    const mouseDelta = this.input.getMouseDelta();
-    this._rotation.yaw -= mouseDelta.x;
-    this._rotation.pitch -= mouseDelta.y;
-    this._rotation.pitch = clamp(this._rotation.pitch, -HALF_PI + 0.1, HALF_PI - 0.1);
-
-    // Movement
+    // Movement (always active)
     const moveForward = this.input.isActionPressed('moveForward') ? 1 : 0;
     const moveBackward = this.input.isActionPressed('moveBackward') ? 1 : 0;
     const moveLeft = this.input.isActionPressed('moveLeft') ? 1 : 0;
@@ -202,16 +216,17 @@ export class Player {
     const speed = PLAYER_CONFIG.moveSpeed;
 
     // Calculate movement direction based on yaw
+    // Three.js forward is -Z, so negate sin/cos
     const moveDir = new THREE.Vector3();
     const forwardDir = new THREE.Vector3(
-      Math.sin(this._rotation.yaw),
+      -Math.sin(this._rotation.yaw),
       0,
-      Math.cos(this._rotation.yaw)
+      -Math.cos(this._rotation.yaw)
     );
     const rightDir = new THREE.Vector3(
-      Math.sin(this._rotation.yaw + Math.PI / 2),
+      -Math.sin(this._rotation.yaw - Math.PI / 2),
       0,
-      Math.cos(this._rotation.yaw + Math.PI / 2)
+      -Math.cos(this._rotation.yaw - Math.PI / 2)
     );
 
     moveDir.addScaledVector(forwardDir, forward);
@@ -227,10 +242,11 @@ export class Player {
   }
 
   public jump(): void {
-    if (!this.canJump) return;
+    if (!this.canJump && this.coyoteTime <= 0) return;
 
     this.body.velocity.y = PLAYER_CONFIG.jumpForce;
     this.canJump = false;
+    this.coyoteTime = 0;
     this._isGrounded = false;
   }
 
@@ -295,10 +311,12 @@ export class Player {
     const weapon = this.weapons.get(this._currentWeapon);
     if (!weapon) return false;
 
+    const oldAmmo = weapon.currentAmmo;
     const results = weapon.fire();
 
-    if (results.length > 0 || weapon.currentAmmo >= 0) {
-      if (this.onWeaponFireCallback && results.length > 0) {
+    // If ammo decreased, a shot was actually fired
+    if (weapon.currentAmmo < oldAmmo) {
+      if (this.onWeaponFireCallback) {
         this.onWeaponFireCallback(results);
       }
       return true;
