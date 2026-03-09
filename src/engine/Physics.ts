@@ -142,14 +142,17 @@ export class Physics {
     const body = new CANNON.Body({
       mass: 80,
       position: new CANNON.Vec3(position.x, position.y, position.z),
-      shape: shape,
       fixedRotation: true,
-      linearDamping: 0.9,
+      linearDamping: 0.1,
       angularDamping: 1.0,
       allowSleep: false,
       collisionFilterGroup: COLLISION_GROUPS.PLAYER,
       collisionFilterMask: COLLISION_GROUPS.WORLD | COLLISION_GROUPS.ENEMY,
     });
+
+    const quaternion = new CANNON.Quaternion();
+    quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+    body.addShape(shape, new CANNON.Vec3(0, 0, 0), quaternion);
 
     return body;
   }
@@ -160,12 +163,15 @@ export class Physics {
     const body = new CANNON.Body({
       mass: 50,
       position: new CANNON.Vec3(position.x, position.y + height / 2, position.z),
-      shape: shape,
       fixedRotation: true,
-      linearDamping: 0.5,
+      linearDamping: 0.1,
       collisionFilterGroup: COLLISION_GROUPS.ENEMY,
       collisionFilterMask: COLLISION_GROUPS.WORLD | COLLISION_GROUPS.PLAYER | COLLISION_GROUPS.ENEMY,
     });
+
+    const quaternion = new CANNON.Quaternion();
+    quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+    body.addShape(shape, new CANNON.Vec3(0, 0, 0), quaternion);
 
     return body;
   }
