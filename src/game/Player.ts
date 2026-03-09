@@ -212,7 +212,7 @@ export class Player {
     }
   }
 
-  public move(forward: number, right: number, _delta: number): void {
+  public move(forward: number, right: number, delta: number): void {
     const speed = PLAYER_CONFIG.moveSpeed;
 
     // Calculate movement direction based on yaw
@@ -234,11 +234,30 @@ export class Player {
 
     if (moveDir.lengthSq() > 0) {
       moveDir.normalize();
+      // Wake up the body to ensure physics engine processes the velocity change
+      if (this.body.sleepState === CANNON.Body.SLEEPING) {
+        this.body.wakeUp();
+      }
     }
 
-    // Apply velocity to physics body
-    this.body.velocity.x = moveDir.x * speed;
-    this.body.velocity.z = moveDir.z * speed;
+    // Target velocity on XZ plane
+    const targetVelocityX = moveDir.x * speed;
+    const targetVelocityZ = moveDir.z * speed;
+
+    // Current velocity
+    const currentVelocityX = this.body.velocity.x;
+    const currentVelocityZ = this.body.velocity.z;
+
+    // Smoothly interpolate towards target velocity (realistic acceleration/friction)
+    // Faster interpolation on ground, slower in air
+    const lerpFactor = this._isGrounded ? 15.0 : 2.0;
+    
+    // Apply interpolation using exponential smoothing
+    // v = lerp(current, target, 1 - exp(-speed * delta))
+    const t = 1 - Math.exp(-lerpFactor * delta);
+    
+    this.body.velocity.x = currentVelocityX + (targetVelocityX - currentVelocityX) * t;
+    this.body.velocity.z = currentVelocityZ + (targetVelocityZ - currentVelocityZ) * t;
   }
 
   public jump(): void {

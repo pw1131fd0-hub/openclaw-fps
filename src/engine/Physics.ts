@@ -146,6 +146,7 @@ export class Physics {
       fixedRotation: true,
       linearDamping: 0.9,
       angularDamping: 1.0,
+      allowSleep: false,
       collisionFilterGroup: COLLISION_GROUPS.PLAYER,
       collisionFilterMask: COLLISION_GROUPS.WORLD | COLLISION_GROUPS.ENEMY,
     });
