@@ -29,8 +29,8 @@ export class Physics {
     this.world.gravity.set(0, GAME_CONFIG.gravity, 0);
     this.world.broadphase = new CANNON.SAPBroadphase(this.world);
     this.world.allowSleep = true;
-    this.world.defaultContactMaterial.friction = 0.3;
-    this.world.defaultContactMaterial.restitution = 0.1;
+    this.world.defaultContactMaterial.friction = 0.0;
+    this.world.defaultContactMaterial.restitution = 0.0;
   }
 
   public step(delta: number): void {
