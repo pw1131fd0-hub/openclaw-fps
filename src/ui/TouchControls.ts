@@ -40,11 +40,28 @@ export class TouchControls {
 
   private onWeaponSwitchCallback?: (index: number) => void;
 
+  // Store bound methods for cleanup
+  private boundJoystickStart: (e: TouchEvent) => void;
+  private boundJoystickMove: (e: TouchEvent) => void;
+  private boundJoystickEnd: (e: TouchEvent) => void;
+  private boundLookStart: (e: TouchEvent) => void;
+  private boundLookMove: (e: TouchEvent) => void;
+  private boundLookEnd: (e: TouchEvent) => void;
+  private eventListeners: Array<{ element: HTMLElement | Document, event: string, handler: EventListener }> = [];
+
   constructor() {
     this.container = document.createElement('div');
     this.container.id = 'touch-controls';
     this.container.innerHTML = this.getTemplate();
     this.applyStyles();
+
+    // Bind methods for cleanup
+    this.boundJoystickStart = this.onJoystickTouchStart.bind(this);
+    this.boundJoystickMove = this.onJoystickTouchMove.bind(this);
+    this.boundJoystickEnd = this.onJoystickTouchEnd.bind(this);
+    this.boundLookStart = this.onLookTouchStart.bind(this);
+    this.boundLookMove = this.onLookTouchMove.bind(this);
+    this.boundLookEnd = this.onLookTouchEnd.bind(this);
   }
 
   private getTemplate(): string {
@@ -223,9 +240,14 @@ export class TouchControls {
         touchId: null,
       };
 
-      joystickEl.addEventListener('touchstart', this.onJoystickTouchStart.bind(this));
-      joystickEl.addEventListener('touchmove', this.onJoystickTouchMove.bind(this));
-      joystickEl.addEventListener('touchend', this.onJoystickTouchEnd.bind(this));
+      joystickEl.addEventListener('touchstart', this.boundJoystickStart);
+      joystickEl.addEventListener('touchmove', this.boundJoystickMove);
+      joystickEl.addEventListener('touchend', this.boundJoystickEnd);
+      
+      // Track for cleanup
+      this.eventListeners.push({ element: joystickEl, event: 'touchstart', handler: this.boundJoystickStart });
+      this.eventListeners.push({ element: joystickEl, event: 'touchmove', handler: this.boundJoystickMove });
+      this.eventListeners.push({ element: joystickEl, event: 'touchend', handler: this.boundJoystickEnd });
     }
 
     // Setup look area
@@ -241,9 +263,14 @@ export class TouchControls {
         touchId: null,
       };
 
-      lookEl.addEventListener('touchstart', this.onLookTouchStart.bind(this));
-      lookEl.addEventListener('touchmove', this.onLookTouchMove.bind(this));
-      lookEl.addEventListener('touchend', this.onLookTouchEnd.bind(this));
+      lookEl.addEventListener('touchstart', this.boundLookStart);
+      lookEl.addEventListener('touchmove', this.boundLookMove);
+      lookEl.addEventListener('touchend', this.boundLookEnd);
+      
+      // Track for cleanup
+      this.eventListeners.push({ element: lookEl, event: 'touchstart', handler: this.boundLookStart });
+      this.eventListeners.push({ element: lookEl, event: 'touchmove', handler: this.boundLookMove });
+      this.eventListeners.push({ element: lookEl, event: 'touchend', handler: this.boundLookEnd });
     }
 
     // Setup buttons
@@ -267,13 +294,17 @@ export class TouchControls {
     const weaponBtns = this.container.querySelectorAll('.weapon-button');
     weaponBtns.forEach((btn) => {
       this.weaponButtons.push(btn as HTMLElement);
-      btn.addEventListener('touchstart', (e) => {
+      
+      const handler = (e: Event) => {
         e.preventDefault();
         const index = parseInt((btn as HTMLElement).dataset.weapon || '1');
         if (this.onWeaponSwitchCallback) {
           this.onWeaponSwitchCallback(index);
         }
-      });
+      };
+      
+      (btn as HTMLElement).addEventListener('touchstart', handler);
+      this.eventListeners.push({ element: btn as HTMLElement, event: 'touchstart', handler });
     });
   }
 
@@ -283,21 +314,30 @@ export class TouchControls {
   ): void {
     if (!button) return;
 
-    button.addEventListener('touchstart', (e) => {
+    const startHandler = (e: Event) => {
       e.preventDefault();
       button.classList.add('active');
       callback(true);
-    });
+    };
 
-    button.addEventListener('touchend', () => {
+    const endHandler = () => {
       button.classList.remove('active');
       callback(false);
-    });
+    };
 
-    button.addEventListener('touchcancel', () => {
+    const cancelHandler = () => {
       button.classList.remove('active');
       callback(false);
-    });
+    };
+
+    button.addEventListener('touchstart', startHandler);
+    button.addEventListener('touchend', endHandler);
+    button.addEventListener('touchcancel', cancelHandler);
+
+    // Track for cleanup
+    this.eventListeners.push({ element: button, event: 'touchstart', handler: startHandler });
+    this.eventListeners.push({ element: button, event: 'touchend', handler: endHandler });
+    this.eventListeners.push({ element: button, event: 'touchcancel', handler: cancelHandler });
   }
 
   private onJoystickTouchStart(e: TouchEvent): void {
@@ -455,6 +495,13 @@ export class TouchControls {
   }
 
   public dispose(): void {
+    // Remove all event listeners
+    this.eventListeners.forEach(({ element, event, handler }) => {
+      element.removeEventListener(event, handler);
+    });
+    this.eventListeners = [];
+
+    // Remove container
     this.container.remove();
   }
 }

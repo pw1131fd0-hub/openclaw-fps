@@ -371,7 +371,7 @@ export class Menu {
           <div class="settings-label">
             <span>滑鼠靈敏度</span>
             <input type="range" class="settings-slider" id="mouse-sensitivity" 
-                   min="1" max="100" value="${this.settings.mouseSensitivity * 10000}">
+                   min="1" max="100" value="${this.settings.mouseSensitivity * 20000}">
           </div>
           
           <div class="settings-label">
@@ -412,7 +412,7 @@ export class Menu {
     });
 
     this.bindSlider('mouse-sensitivity', (value) => {
-      this.settings.mouseSensitivity = value / 10000;
+      this.settings.mouseSensitivity = value / 20000;
       this.notifySettingsChange();
     });
 

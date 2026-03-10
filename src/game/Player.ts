@@ -350,7 +350,7 @@ export class Player {
   }
 
   public addRotation(pitch: number, yaw: number): void {
-    this._rotation.pitch += pitch;
+    this._rotation.pitch -= pitch;  // 修復：反轉 pitch 方向（負值表示向上看）
     this._rotation.yaw -= yaw;
     this._rotation.pitch = clamp(this._rotation.pitch, -HALF_PI + 0.1, HALF_PI - 0.1);
   }

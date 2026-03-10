@@ -139,16 +139,21 @@ describe('GameTypes', () => {
 
   describe('PlayerConfig', () => {
     it('should have all required player properties', () => {
-      const config: PlayerConfig = {
-        moveSpeed: 8,
-        sprintMultiplier: 1.5,
-        jumpForce: 7,
-        mouseSensitivity: 0.002,
-        maxHealth: 100,
-        height: 1.8,
-        radius: 0.5,
-      };
-      expect(config.moveSpeed * config.sprintMultiplier).toBe(12);
+    const config: PlayerConfig = {
+      moveSpeed: 6.5,
+      sprintMultiplier: 1.5,
+      jumpForce: 7,
+      mouseSensitivity: 0.001,
+      maxHealth: 100,
+      height: 1.8,
+      radius: 0.5,
+    };
+
+    expect(config.moveSpeed).toBe(6.5);
+    expect(config.sprintMultiplier).toBe(1.5);
+    expect(config.jumpForce).toBe(7);
+    expect(config.mouseSensitivity).toBe(0.001);
+
     });
   });
 

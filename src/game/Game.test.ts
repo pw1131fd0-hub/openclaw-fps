@@ -30,9 +30,10 @@ describe('Game Integration', () => {
   });
 
   describe('Player configuration', () => {
-    it('should have movement speed', () => {
-      expect(PLAYER_CONFIG.moveSpeed).toBe(7);
-    });
+  it('should initialize with correct default configuration', () => {
+    expect(PLAYER_CONFIG.moveSpeed).toBe(6.5);
+    expect(PLAYER_CONFIG.maxHealth).toBe(100);
+  });
 
     it('should have sprint multiplier', () => {
       expect(PLAYER_CONFIG.sprintMultiplier).toBe(1.5);

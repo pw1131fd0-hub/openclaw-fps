@@ -12,10 +12,12 @@ export class Renderer {
   private lastFPSUpdate: number = 0;
   private currentFPS: number = 60;
   private mainLight: THREE.DirectionalLight | null = null;
+  private boundOnResize: () => void;
 
   constructor(canvas: HTMLCanvasElement) {
     this.domElement = canvas;
     this.clock = new THREE.Clock();
+    this.boundOnResize = this.onResize.bind(this);
 
     // Create scene
     this.scene = new THREE.Scene();
@@ -49,7 +51,7 @@ export class Renderer {
     this.setupLighting();
 
     // Handle resize
-    window.addEventListener('resize', this.onResize.bind(this));
+    window.addEventListener('resize', this.boundOnResize);
   }
 
   public setQuality(quality: 'low' | 'medium' | 'high'): void {
@@ -176,7 +178,7 @@ export class Renderer {
   }
 
   public dispose(): void {
-    window.removeEventListener('resize', this.onResize.bind(this));
+    window.removeEventListener('resize', this.boundOnResize);
     this.renderer.dispose();
   }
 }

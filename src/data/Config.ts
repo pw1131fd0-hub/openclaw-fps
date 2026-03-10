@@ -113,10 +113,10 @@ export const PICKUP_CONFIGS: Record<PickupType, PickupConfig> = {
 
 // Player configuration
 export const PLAYER_CONFIG: PlayerConfig = {
-  moveSpeed: 7,
+  moveSpeed: 6.5,
   sprintMultiplier: 1.5,
   jumpForce: 7,
-  mouseSensitivity: 0.0015,
+  mouseSensitivity: 0.001,
   maxHealth: 100,
   height: 1.8,
   radius: 0.5,
@@ -160,7 +160,7 @@ export function getWaveConfig(wave: number): WaveConfig {
 export const DEFAULT_SETTINGS: GameSettings = {
   musicVolume: 0.5,
   sfxVolume: 0.7,
-  mouseSensitivity: 0.0015,
+  mouseSensitivity: 0.001,
   invertY: false,
   showFPS: false,
   touchControlsEnabled: true,
