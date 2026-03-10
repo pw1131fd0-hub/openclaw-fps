@@ -31,7 +31,7 @@ describe('Game Integration', () => {
 
   describe('Player configuration', () => {
     it('should have movement speed', () => {
-      expect(PLAYER_CONFIG.moveSpeed).toBe(8);
+      expect(PLAYER_CONFIG.moveSpeed).toBe(7);
     });
 
     it('should have sprint multiplier', () => {

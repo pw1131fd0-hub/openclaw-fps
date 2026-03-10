@@ -334,6 +334,10 @@ export class Game {
     this.input.setSensitivity(settings.mouseSensitivity);
     this.input.setInvertY(settings.invertY);
     this.renderer.setQuality(settings.graphicsQuality);
+    
+    if (this.touchControls) {
+      this.touchControls.setSensitivity(settings.mouseSensitivity);
+    }
   }
 
   public get state(): GameState {

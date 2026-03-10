@@ -36,6 +36,8 @@ export class TouchControls {
   private _isJumpPressed: boolean = false;
   private _isReloadPressed: boolean = false;
 
+  private lookSensitivity: number = 0.003;
+
   private onWeaponSwitchCallback?: (index: number) => void;
 
   constructor() {
@@ -410,12 +412,19 @@ export class TouchControls {
   public getLookDelta(): { x: number; y: number } {
     if (!this.lookArea) return { x: 0, y: 0 };
 
-    const sensitivity = 0.005;
     return {
-      x: this.lookArea.deltaX * sensitivity,
-      y: this.lookArea.deltaY * sensitivity,
+      x: this.lookArea.deltaX * this.lookSensitivity,
+      y: this.lookArea.deltaY * this.lookSensitivity,
     };
   }
+
+  public setSensitivity(sensitivity: number): void {
+    // We typically want touch sensitivity to be a bit higher than mouse
+    // as the physical movement range is smaller
+    this.lookSensitivity = sensitivity * 2.5; 
+  }
+
+
 
   public isFirePressed(): boolean {
     return this._isFirePressed;

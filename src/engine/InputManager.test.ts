@@ -292,7 +292,7 @@ describe('InputManager', () => {
 
   describe('default settings', () => {
     it('should use default mouse sensitivity', () => {
-      expect(DEFAULT_SETTINGS.mouseSensitivity).toBe(0.002);
+      expect(DEFAULT_SETTINGS.mouseSensitivity).toBe(0.0015);
     });
 
     it('should support invert Y option', () => {
