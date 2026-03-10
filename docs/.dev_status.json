@@ -1,7 +1,7 @@
 {
   "stage": "done",
   "completeness": 100,
-  "summary": "全面重構輸入系統為基於 event.code 與 event.key 的雙重回退模式，修復部分瀏覽器下 WASD 移動失效問題；修正 Player.ts 中的重複方法並恢復射擊後座力，優化視角搖晃 (View Bobbing) 與傾斜 (Tilting) 邏輯，大幅提升遊戲操作的真實感與流暢度。",
-  "next_action": "專案目前處於高品質完工狀態，建議進行跨瀏覽器與跨裝置的最終驗收測試。",
-  "updated_at": "2026-03-10T01:10:00Z"
+  "summary": "修復 WASD 移動無反應問題（強化 InputManager 對不同瀏覽器 code/key 的相容性與視窗失去焦點處理），並大幅提升移動真實感（新增水平視角搖晃、著地衝擊感、待機呼吸晃動與優化移動慣性）。",
+  "next_action": "專案目前處於高品質完工狀態，建議進行最終跨平台驗收測試。",
+  "updated_at": "2026-03-10T01:21:00Z"
 }

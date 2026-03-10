@@ -34,6 +34,7 @@ export class Player {
   // View bobbing and tilting
   private bobTimer: number = 0;
   private currentBobOffset: number = 0;
+  private currentHBobOffset: number = 0;
   private currentTilt: number = 0;
   private targetTilt: number = 0;
   private _currentSpread: number = 0;
@@ -177,10 +178,17 @@ export class Player {
 
   private updateCamera(): void {
     // Position camera at player's eye level + bobbing offset
+    // Also apply horizontal bobbing
+    const rightDir = new THREE.Vector3(
+      -Math.sin(this._rotation.yaw - Math.PI / 2),
+      0,
+      -Math.cos(this._rotation.yaw - Math.PI / 2)
+    );
+
     this.camera.position.set(
-      this._position.x,
+      this._position.x + rightDir.x * this.currentHBobOffset,
       this._position.y + PLAYER_CONFIG.height * 0.4 + this.currentBobOffset,
-      this._position.z
+      this._position.z + rightDir.z * this.currentHBobOffset
     );
 
     // Apply rotation (including recoil)
@@ -221,21 +229,33 @@ export class Player {
       if (speed > 0.1) {
         // Walking/Sprinting bob
         const bobFactor = speed / PLAYER_CONFIG.moveSpeed;
-        const bobSpeed = speed > PLAYER_CONFIG.moveSpeed * 1.1 ? 16 : 12;
+        const isSprinting = speed > PLAYER_CONFIG.moveSpeed * 1.1;
+        const bobSpeed = isSprinting ? 14 : 10;
         this.bobTimer += delta * bobSpeed;
         
-        const bobAmount = 0.08 * bobFactor;
-        const targetBob = Math.sin(this.bobTimer) * bobAmount;
-        this.currentBobOffset += (targetBob - this.currentBobOffset) * 10 * delta;
+        // Vertical bob (up and down)
+        const vBobAmount = 0.06 * bobFactor;
+        const targetVBob = Math.sin(this.bobTimer * 2) * vBobAmount; // Double speed for vertical
+        
+        // Horizontal sway (side to side)
+        const hBobAmount = 0.04 * bobFactor;
+        const targetHBob = Math.cos(this.bobTimer) * hBobAmount;
+        
+        this.currentBobOffset += (targetVBob - this.currentBobOffset) * 12 * delta;
+        this.currentHBobOffset += (targetHBob - this.currentHBobOffset) * 12 * delta;
       } else {
-        // Idle breathing bob
-        this.bobTimer += delta * 2;
-        const targetBob = Math.sin(this.bobTimer) * 0.02;
-        this.currentBobOffset += (targetBob - this.currentBobOffset) * 2 * delta;
+        // Idle breathing bob (subtle)
+        this.bobTimer += delta * 1.5;
+        const targetVBob = Math.sin(this.bobTimer) * 0.015;
+        const targetHBob = Math.cos(this.bobTimer * 0.5) * 0.005;
+        
+        this.currentBobOffset += (targetVBob - this.currentBobOffset) * 2 * delta;
+        this.currentHBobOffset += (targetHBob - this.currentHBobOffset) * 2 * delta;
       }
     } else {
       // Return to zero when in air
       this.currentBobOffset += (0 - this.currentBobOffset) * 4 * delta;
+      this.currentHBobOffset += (0 - this.currentHBobOffset) * 4 * delta;
     }
   }
 
@@ -251,16 +271,16 @@ export class Player {
     const strafeSpeed = horizontalVelocity.dot(rightDir);
     
     // Tilt based on strafing (more pronounced)
-    const strafeTilt = -(strafeSpeed / PLAYER_CONFIG.moveSpeed) * 0.08;
+    const strafeTilt = -(strafeSpeed / PLAYER_CONFIG.moveSpeed) * 0.1;
     
     // Mouse look tilt (subtle tilt when turning)
     const mouseDelta = this.input.getMouseDelta();
-    const turnTilt = -mouseDelta.x * 1.5;
+    const turnTilt = -mouseDelta.x * 2.0;
 
     this.targetTilt = strafeTilt + turnTilt;
     
     // Smoothly interpolate current tilt
-    const tiltLerpFactor = 10;
+    const tiltLerpFactor = 8;
     this.currentTilt += (this.targetTilt - this.currentTilt) * tiltLerpFactor * delta;
   }
 
@@ -268,7 +288,7 @@ export class Player {
     const horizontalVelocity = new THREE.Vector2(this.body.velocity.x, this.body.velocity.z);
     const speed = horizontalVelocity.length();
 
-    if (this._isGrounded && speed > 1.0) {
+    if (this._isGrounded && speed > 1.5) {
       this.footstepTimer -= delta;
       if (this.footstepTimer <= 0) {
         this.audio.play('footstep');
@@ -291,7 +311,7 @@ export class Player {
     };
     const rayEnd = {
       x: this.body.position.x,
-      y: this.body.position.y - PLAYER_CONFIG.height / 2 - 0.25, // Increased depth for more reliable detection
+      y: this.body.position.y - PLAYER_CONFIG.height / 2 - 0.2,
       z: this.body.position.z,
     };
 
@@ -319,8 +339,10 @@ export class Player {
 
   private onLand(): void {
     this.audio.play('footstep');
-    // Camera dip
-    this.currentBobOffset = -0.15;
+    // Camera impact dip
+    this.currentBobOffset = -0.2;
+    // Add a bit of tilt on land
+    this.currentTilt += (Math.random() - 0.5) * 0.05;
   }
 
   public setExternalMovement(forward: number, right: number, sprint: boolean = false): void {
@@ -429,12 +451,12 @@ export class Player {
     const currentVelocityZ = this.body.velocity.z;
 
     // Smoothly interpolate towards target velocity
-    // Higher lerp factor for stopping and grounded movement
-    let lerpFactor = this._isGrounded ? 15.0 : 4.0;
+    // Adjusted lerp factors for more "realistic" inertia
+    let lerpFactor = this._isGrounded ? 12.0 : 3.0;
     
-    // If no input, stop even faster on ground
+    // If no input, stop on ground
     if (moveDir.lengthSq() === 0 && this._isGrounded) {
-        lerpFactor = 20.0;
+        lerpFactor = 15.0;
     }
 
     const t = 1 - Math.exp(-lerpFactor * delta);

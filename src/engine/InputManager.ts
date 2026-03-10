@@ -41,6 +41,8 @@ export class InputManager {
   private boundMouseUp = this.onMouseUp.bind(this);
   private boundMouseMove = this.onMouseMove.bind(this);
   private boundPointerLockChange = this.onPointerLockChange.bind(this);
+  private boundBlur = this.onBlur.bind(this);
+  private boundContextMenu = (e: Event) => e.preventDefault();
 
   constructor() {
     this.setupEventListeners();
@@ -55,8 +57,12 @@ export class InputManager {
     document.addEventListener('mousedown', this.boundMouseDown);
     document.addEventListener('mouseup', this.boundMouseUp);
     document.addEventListener('mousemove', this.boundMouseMove);
+    document.addEventListener('contextmenu', this.boundContextMenu);
 
-    // Pointer lock
+    // Window events
+    window.addEventListener('blur', this.boundBlur);
+
+    // Pointer lock (still on document as per spec)
     document.addEventListener(
       'pointerlockchange',
       this.boundPointerLockChange
@@ -64,56 +70,54 @@ export class InputManager {
   }
 
   private onKeyDown(event: KeyboardEvent): void {
-    let code = event.code;
+    const code = event.code;
+    const key = event.key;
 
-    // Fallback for browsers with poor event.code support
-    if (!code && event.key) {
-      const keyMap: Record<string, string> = {
-        'w': 'KeyW', 'W': 'KeyW',
-        'a': 'KeyA', 'A': 'KeyA',
-        's': 'KeyS', 'S': 'KeyS',
-        'd': 'KeyD', 'D': 'KeyD',
-        ' ': 'Space',
-        'r': 'KeyR', 'R': 'KeyR',
-        '1': 'Digit1',
-        '2': 'Digit2',
-        '3': 'Digit3',
-        'Escape': 'Escape',
-        'ArrowUp': 'ArrowUp',
-        'ArrowDown': 'ArrowDown',
-        'ArrowLeft': 'ArrowLeft',
-        'ArrowRight': 'ArrowRight'
-      };
-      code = keyMap[event.key] || event.key;
-    }
-
-    if (!code) return;
-
-    // Check code for justPressed
-    if (!this.keysPressed.has(code)) {
-      this.keysJustPressed.add(code);
-    }
+    // We track both code and key for maximum compatibility
+    // code is better for physical layout (WASD), key is a fallback
+    const codesToTrack = this.getNormalizedCodes(code, key);
     
-    this.keysPressed.add(code);
+    codesToTrack.forEach(c => {
+      if (!this.keysPressed.has(c)) {
+        this.keysJustPressed.add(c);
+      }
+      this.keysPressed.add(c);
+    });
 
-    // Prevent default for game keys
-    if (this.isGameKey(code)) {
-      event.preventDefault();
+    // Prevent default for game keys to avoid scrolling/browser shortcuts
+    if (this.isGameKey(code) || (key && this.isGameKey(key))) {
+      // Don't prevent F12 or other system shortcuts
+      if (!event.ctrlKey && !event.altKey && !event.metaKey) {
+        event.preventDefault();
+      }
     }
   }
 
   private onKeyUp(event: KeyboardEvent): void {
-    let code = event.code;
+    const code = event.code;
+    const key = event.key;
 
-    // Same fallback for KeyUp
-    if (!code && event.key) {
+    const codesToTrack = this.getNormalizedCodes(code, key);
+    
+    codesToTrack.forEach(c => {
+      this.keysPressed.delete(c);
+      this.keysJustReleased.add(c);
+    });
+  }
+
+  private getNormalizedCodes(code: string | undefined, key: string | undefined): string[] {
+    const results: string[] = [];
+    if (code) results.push(code);
+    
+    if (key) {
+      // Map common keys to standard codes as fallbacks
       const keyMap: Record<string, string> = {
         'w': 'KeyW', 'W': 'KeyW',
         'a': 'KeyA', 'A': 'KeyA',
         's': 'KeyS', 'S': 'KeyS',
         'd': 'KeyD', 'D': 'KeyD',
-        ' ': 'Space',
         'r': 'KeyR', 'R': 'KeyR',
+        ' ': 'Space',
         '1': 'Digit1',
         '2': 'Digit2',
         '3': 'Digit3',
@@ -121,15 +125,18 @@ export class InputManager {
         'ArrowUp': 'ArrowUp',
         'ArrowDown': 'ArrowDown',
         'ArrowLeft': 'ArrowLeft',
-        'ArrowRight': 'ArrowRight'
+        'ArrowRight': 'ArrowRight',
+        'Shift': 'ShiftLeft',
       };
-      code = keyMap[event.key] || event.key;
+      
+      if (keyMap[key]) {
+        results.push(keyMap[key]);
+      }
+      // Also track the literal key as a direct match
+      results.push(key);
     }
-
-    if (code) {
-      this.keysPressed.delete(code);
-      this.keysJustReleased.add(code);
-    }
+    
+    return results;
   }
 
   private onMouseDown(event: MouseEvent): void {
@@ -155,6 +162,14 @@ export class InputManager {
     }
   }
 
+  private onBlur(): void {
+    // Clear all inputs when window loses focus to prevent "stuck" keys
+    this.keysPressed.clear();
+    this.mouseButtons.clear();
+    this.mouseDelta.x = 0;
+    this.mouseDelta.y = 0;
+  }
+
   private onPointerLockChange(): void {
     this._isPointerLocked = document.pointerLockElement !== null;
     this.pointerLockCallbacks.forEach((callback) =>
@@ -162,9 +177,10 @@ export class InputManager {
     );
   }
 
-  private isGameKey(code: string): boolean {
+  private isGameKey(codeOrKey: string): boolean {
+    if (!codeOrKey) return false;
     for (const keys of Object.values(this.bindings)) {
-      if (keys.includes(code)) {
+      if (keys.includes(codeOrKey)) {
         return true;
       }
     }
@@ -221,19 +237,26 @@ export class InputManager {
   public requestPointerLock(): void {
     const canvas = document.getElementById('game-canvas');
     if (canvas && !this._isPointerLocked) {
-      const promise = canvas.requestPointerLock() as any;
-      if (promise && promise.catch) {
-        promise.catch((error: Error) => {
-          if (error.name !== 'SecurityError') {
-            console.error('Pointer lock failed:', error);
-          }
-        });
+      try {
+        const promise = canvas.requestPointerLock() as any;
+        if (promise && promise.catch) {
+          promise.catch((error: Error) => {
+            if (error.name !== 'SecurityError') {
+              console.error('Pointer lock failed:', error);
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('Pointer lock request failed', err);
       }
     }
   }
 
   public exitPointerLock(): void {
-    document.exitPointerLock();
+    // Check if exitPointerLock exists on document (it might not in all test environments)
+    if (typeof document.exitPointerLock === 'function') {
+      document.exitPointerLock();
+    }
   }
 
   public onPointerLockChangeCallback(callback: (locked: boolean) => void): void {
@@ -263,6 +286,8 @@ export class InputManager {
     document.removeEventListener('mousedown', this.boundMouseDown);
     document.removeEventListener('mouseup', this.boundMouseUp);
     document.removeEventListener('mousemove', this.boundMouseMove);
+    document.removeEventListener('contextmenu', this.boundContextMenu);
+    window.removeEventListener('blur', this.boundBlur);
     document.removeEventListener(
       'pointerlockchange',
       this.boundPointerLockChange
