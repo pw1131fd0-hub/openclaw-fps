@@ -187,3 +187,17 @@ I will read the `package.json` file to understand the project's dependencies and
 I will read the `src/engin
 
 ---
+
+## [2026-03-10 09:05:56] [done] 100%
+
+全面重構輸入系統為基於 event.code 與 event.key 的雙重回退模式，修復部分瀏覽器下 WASD 移動失效問題；修正 Player.ts 中的重複方法並恢復射擊後座力，優化視角搖晃 (View Bobbing) 與傾斜 (Tilting) 邏輯，大幅提升遊戲操作的真實感與流暢度。
+
+> I will initialize the Ralph loop state with the provided arguments.
+I'll search for the `setup.sh` script to find its correct path.
+I'll run the `setup.sh` script to initialize the loop state.
+I'll read the contents of `.gemini_instructions.tmp` to understand the next steps.
+I'll list the files in `src/game` and `src/engine` to locate the movement and input handling logic.
+I'll also check the files in `src/engine` to see if the movement logic is there.
+I'll read `src/game/Player.ts` and `src/eng
+
+---

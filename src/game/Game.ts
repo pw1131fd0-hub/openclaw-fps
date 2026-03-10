@@ -515,7 +515,7 @@ export class Game {
     this.pickupManager.checkCollisions(this.player.position);
   }
 
-  private handleTouchInput(delta: number): void {
+  private handleTouchInput(_delta: number): void {
     const movement = this.touchControls.getMovementVector();
     const look = this.touchControls.getLookDelta();
     

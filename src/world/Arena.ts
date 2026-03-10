@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Physics } from '@/engine/Physics';
 import { COLORS, ARENA_MAP } from '@/data/Config';
-import { Vector3 } from '@/types/GameTypes';
+import { Vector3, MapConfig } from '@/types/GameTypes';
 
 export interface ArenaObject {
   mesh: THREE.Mesh;
@@ -123,7 +123,7 @@ export class Arena {
       metalness: 0.6,
     });
 
-    const covers = config.obstacles || [
+    const defaultObstacles = [
       { pos: { x: 10, y: 1.5, z: 10 }, size: { w: 3, h: 3, d: 3 } },
       { pos: { x: -10, y: 1.5, z: 10 }, size: { w: 3, h: 3, d: 3 } },
       { pos: { x: 10, y: 1.5, z: -10 }, size: { w: 3, h: 3, d: 3 } },
@@ -138,7 +138,9 @@ export class Arena {
       { pos: { x: 0, y: 2, z: -5 }, size: { w: 2, h: 4, d: 2 } },
     ];
 
-    covers.forEach((cover) => {
+    const covers = config.obstacles || defaultObstacles;
+
+    covers.forEach((cover: any) => {
       const geometry = new THREE.BoxGeometry(cover.size.w, cover.size.h, cover.size.d);
       const mesh = new THREE.Mesh(geometry, obstacleMaterial);
       mesh.position.set(cover.pos.x, cover.pos.y, cover.pos.z);
@@ -163,14 +165,16 @@ export class Arena {
       metalness: 0.7,
     });
 
-    const platforms = config.platforms || [
+    const defaultPlatforms = [
       { pos: { x: 20, y: 2, z: 0 }, size: { w: 8, h: 0.5, d: 8 } },
       { pos: { x: -20, y: 2, z: 0 }, size: { w: 8, h: 0.5, d: 8 } },
       { pos: { x: 0, y: 3, z: 20 }, size: { w: 10, h: 0.5, d: 6 } },
       { pos: { x: 0, y: 3, z: -20 }, size: { w: 10, h: 0.5, d: 6 } },
     ];
 
-    platforms.forEach((platform) => {
+    const platforms = config.platforms || defaultPlatforms;
+
+    platforms.forEach((platform: any) => {
       const geometry = new THREE.BoxGeometry(
         platform.size.w,
         platform.size.h,
