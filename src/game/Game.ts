@@ -262,6 +262,10 @@ export class Game {
       this.hud.updateWeapon(to);
       this.updateAmmoDisplay();
     });
+
+    this.player.onSpreadChange((spread) => {
+      this.hud.setCrosshairSpread(spread);
+    });
   }
 
   private setupMenuCallbacks(): void {

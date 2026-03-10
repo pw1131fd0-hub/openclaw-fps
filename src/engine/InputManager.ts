@@ -4,17 +4,17 @@ import { DEFAULT_SETTINGS } from '@/data/Config';
 type KeyBindings = Record<KeyAction, string[]>;
 
 const DEFAULT_KEY_BINDINGS: KeyBindings = {
-  moveForward: ['KeyW', 'ArrowUp', 'w'],
-  moveBackward: ['KeyS', 'ArrowDown', 's'],
-  moveLeft: ['KeyA', 'ArrowLeft', 'a'],
-  moveRight: ['KeyD', 'ArrowRight', 'd'],
-  sprint: ['ShiftLeft', 'ShiftRight', 'Shift'],
-  jump: ['Space', ' '],
-  reload: ['KeyR', 'r'],
+  moveForward: ['KeyW', 'ArrowUp'],
+  moveBackward: ['KeyS', 'ArrowDown'],
+  moveLeft: ['KeyA', 'ArrowLeft'],
+  moveRight: ['KeyD', 'ArrowRight'],
+  sprint: ['ShiftLeft', 'ShiftRight'],
+  jump: ['Space'],
+  reload: ['KeyR'],
   fire: ['MouseLeft'],
-  weapon1: ['Digit1', '1'],
-  weapon2: ['Digit2', '2'],
-  weapon3: ['Digit3', '3'],
+  weapon1: ['Digit1'],
+  weapon2: ['Digit2'],
+  weapon3: ['Digit3'],
   pause: ['Escape'],
 };
 
@@ -65,30 +65,23 @@ export class InputManager {
 
   private onKeyDown(event: KeyboardEvent): void {
     const code = event.code;
-    const key = event.key;
     
-    // Check both code and key for justPressed
+    // Check code for justPressed
     if (!this.keysPressed.has(code)) {
       this.keysJustPressed.add(code);
     }
-    if (!this.keysPressed.has(key)) {
-      this.keysJustPressed.add(key);
-    }
     
     this.keysPressed.add(code);
-    this.keysPressed.add(key);
 
     // Prevent default for game keys
-    if (this.isGameKey(code) || this.isGameKey(key)) {
+    if (this.isGameKey(code)) {
       event.preventDefault();
     }
   }
 
   private onKeyUp(event: KeyboardEvent): void {
     this.keysPressed.delete(event.code);
-    this.keysPressed.delete(event.key);
     this.keysJustReleased.add(event.code);
-    this.keysJustReleased.add(event.key);
   }
 
   private onMouseDown(event: MouseEvent): void {
@@ -98,7 +91,6 @@ export class InputManager {
     this.mouseButtons.add(event.button);
 
     // Request pointer lock on click if we are in a context where it's allowed
-    // We only do this if no menu is blocking the way (handled by Game state usually)
     if (!this._isPointerLocked && event.button === 0) {
       this.requestPointerLock();
     }
@@ -122,9 +114,9 @@ export class InputManager {
     );
   }
 
-  private isGameKey(value: string): boolean {
+  private isGameKey(code: string): boolean {
     for (const keys of Object.values(this.bindings)) {
-      if (keys.includes(value)) {
+      if (keys.includes(code)) {
         return true;
       }
     }

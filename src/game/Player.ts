@@ -36,6 +36,11 @@ export class Player {
   private currentBobOffset: number = 0;
   private currentTilt: number = 0;
   private targetTilt: number = 0;
+  private _currentSpread: number = 0;
+  
+  // Recoil
+  private recoilPitch: number = 0;
+  private targetRecoilPitch: number = 0;
 
   // Footsteps
   private footstepTimer: number = 0;
@@ -50,6 +55,7 @@ export class Player {
   private onHealCallback?: (amount: number) => void;
   private onWeaponFireCallback?: (results: HitResult[]) => void;
   private onWeaponSwitchCallback?: (from: WeaponType, to: WeaponType) => void;
+  private onSpreadChangeCallback?: (spread: number) => void;
 
   constructor(
     physics: Physics,
@@ -146,12 +152,64 @@ export class Player {
     this.updateBobbing(delta);
     this.updateTilting(delta);
     this.updateFootsteps(delta);
+    this.updateRecoil(delta);
     this.updateCamera();
+    this.updateCrosshair(delta);
 
     // Update current weapon
     const weapon = this.weapons.get(this._currentWeapon);
     if (weapon) {
       weapon.update(delta);
+    }
+  }
+
+  private updateRecoil(delta: number): void {
+    // Recover from recoil
+    const recoverySpeed = 10.0;
+    this.recoilPitch += (this.targetRecoilPitch - this.recoilPitch) * 20.0 * delta;
+    this.targetRecoilPitch *= Math.pow(0.1, delta * recoverySpeed);
+    
+    // Smoothly return recoilPitch to 0
+    if (Math.abs(this.targetRecoilPitch) < 0.001) {
+        this.recoilPitch *= Math.pow(0.1, delta * recoverySpeed);
+    }
+  }
+
+  private updateCamera(): void {
+    // Position camera at player's eye level + bobbing offset
+    this.camera.position.set(
+      this._position.x,
+      this._position.y + PLAYER_CONFIG.height * 0.4 + this.currentBobOffset,
+      this._position.z
+    );
+
+    // Apply rotation (including recoil)
+    this.camera.rotation.order = 'YXZ';
+    this.camera.rotation.y = this._rotation.yaw;
+    this.camera.rotation.x = this._rotation.pitch + this.recoilPitch;
+    this.camera.rotation.z = this.currentTilt; // Apply strafe tilt
+  }
+
+  private updateCrosshair(delta: number): void {
+    const horizontalVelocity = new THREE.Vector2(this.body.velocity.x, this.body.velocity.z);
+    const speed = horizontalVelocity.length();
+    
+    // Calculate target spread
+    let targetSpread = 0;
+    
+    if (!this._isGrounded) {
+      targetSpread = 15.0; // High spread in air
+    } else if (speed > 0.1) {
+      const isSprinting = speed > PLAYER_CONFIG.moveSpeed * 1.1;
+      targetSpread = isSprinting ? 8.0 : 4.0; // Medium spread when moving
+    }
+    
+    // Smoothly interpolate spread
+    const lerpFactor = 10.0;
+    this._currentSpread += (targetSpread - this._currentSpread) * lerpFactor * delta;
+    
+    if (this.onSpreadChangeCallback) {
+        this.onSpreadChangeCallback(this._currentSpread);
     }
   }
 
@@ -238,10 +296,15 @@ export class Player {
       collisionFilterMask: COLLISION_GROUPS.WORLD,
     });
 
+    const wasGrounded = this._isGrounded;
     if (result.hit) {
       this._isGrounded = true;
       this.canJump = true;
       this.coyoteTime = this.MAX_COYOTE_TIME;
+
+      if (!wasGrounded) {
+        this.onLand();
+      }
     } else {
       this._isGrounded = false;
       this.coyoteTime -= delta;
@@ -251,12 +314,18 @@ export class Player {
     }
   }
 
+  private onLand(): void {
+    this.audio.play('footstep');
+    // Camera dip
+    this.currentBobOffset = -0.15;
+  }
+
   public setExternalMovement(forward: number, right: number, sprint: boolean = false): void {
     this.externalMovement = { forward, right, sprint };
   }
 
   public addRotation(pitch: number, yaw: number): void {
-    this._rotation.pitch -= pitch;
+    this._rotation.pitch += pitch;
     this._rotation.yaw -= yaw;
     this._rotation.pitch = clamp(this._rotation.pitch, -HALF_PI + 0.1, HALF_PI - 0.1);
   }
@@ -357,7 +426,14 @@ export class Player {
     const currentVelocityZ = this.body.velocity.z;
 
     // Smoothly interpolate towards target velocity
-    const lerpFactor = this._isGrounded ? 12.0 : 3.0;
+    // Higher lerp factor for stopping and grounded movement
+    let lerpFactor = this._isGrounded ? 15.0 : 4.0;
+    
+    // If no input, stop even faster on ground
+    if (moveDir.lengthSq() === 0 && this._isGrounded) {
+        lerpFactor = 20.0;
+    }
+
     const t = 1 - Math.exp(-lerpFactor * delta);
     
     this.body.velocity.x = currentVelocityX + (targetVelocityX - currentVelocityX) * t;
@@ -443,6 +519,14 @@ export class Player {
       if (this.onWeaponFireCallback) {
         this.onWeaponFireCallback(results);
       }
+      
+      // Apply recoil kick
+      let recoilKick = 0.05; // Base recoil for pistol
+      if (this._currentWeapon === 'shotgun') recoilKick = 0.15;
+      if (this._currentWeapon === 'assault_rifle') recoilKick = 0.08;
+      
+      this.targetRecoilPitch -= recoilKick;
+      
       return true;
     }
 
@@ -514,6 +598,10 @@ export class Player {
 
   public onWeaponSwitch(callback: (from: WeaponType, to: WeaponType) => void): void {
     this.onWeaponSwitchCallback = callback;
+  }
+
+  public onSpreadChange(callback: (spread: number) => void): void {
+    this.onSpreadChangeCallback = callback;
   }
 
   public reset(spawnPosition: Vector3): void {
