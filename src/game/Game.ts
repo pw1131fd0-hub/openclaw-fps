@@ -513,17 +513,19 @@ export class Game {
 
   private handleTouchInput(delta: number): void {
     const movement = this.touchControls.getMovementVector();
-    // Look is handled via touch controls directly
+    const look = this.touchControls.getLookDelta();
+    
+    // Look is handled via touch controls directly (deltaX, deltaY)
+    if (look.x !== 0 || look.y !== 0) {
+      this.player.addRotation(look.y, look.x);
+    }
 
     // Apply movement via external input system
     if (movement.x !== 0 || movement.y !== 0) {
-      this.player.setExternalMovement(movement.y, movement.x);
+      // Auto-sprint if joystick pushed far forward
+      const isSprinting = movement.y > 0.8;
+      this.player.setExternalMovement(movement.y, movement.x, isSprinting);
     }
-
-    // Apply look (handled differently for touch)
-    // Touch look is handled via the player's look method
-    
-    // ...
   }
 
   public onGameOver(callback: (stats: GameStats) => void): void {

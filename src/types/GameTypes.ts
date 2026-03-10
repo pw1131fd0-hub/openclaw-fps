@@ -165,6 +165,7 @@ export type KeyAction =
   | 'moveBackward'
   | 'moveLeft'
   | 'moveRight'
+  | 'sprint'
   | 'jump'
   | 'reload'
   | 'fire'

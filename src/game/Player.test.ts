@@ -274,7 +274,7 @@ describe('Player', () => {
   describe('movement', () => {
     it('should move forward', () => {
       const initialZ = player.position.z;
-      player.move(1, 0, 0.1);
+      player.move(1, 0, false, 0.1);
       physics.step(0.1);
       player.syncWithPhysics();
       
@@ -283,7 +283,7 @@ describe('Player', () => {
     });
 
     it('should move backward', () => {
-      player.move(-1, 0, 0.1);
+      player.move(-1, 0, false, 0.1);
       physics.step(0.1);
       player.syncWithPhysics();
       
@@ -291,7 +291,7 @@ describe('Player', () => {
     });
 
     it('should strafe left', () => {
-      player.move(0, -1, 0.1);
+      player.move(0, -1, false, 0.1);
       physics.step(0.1);
       player.syncWithPhysics();
       
@@ -299,7 +299,7 @@ describe('Player', () => {
     });
 
     it('should strafe right', () => {
-      player.move(0, 1, 0.1);
+      player.move(0, 1, false, 0.1);
       physics.step(0.1);
       player.syncWithPhysics();
       

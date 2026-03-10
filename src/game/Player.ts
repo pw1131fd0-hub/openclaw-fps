@@ -37,8 +37,13 @@ export class Player {
   private currentTilt: number = 0;
   private targetTilt: number = 0;
 
+  // Footsteps
+  private footstepTimer: number = 0;
+  private readonly FOOTSTEP_INTERVAL: number = 0.4;
+  private readonly SPRINT_FOOTSTEP_INTERVAL: number = 0.25;
+
   // External movement input (e.g. from touch)
-  private externalMovement: { forward: number; right: number } | null = null;
+  private externalMovement: { forward: number; right: number; sprint: boolean } | null = null;
 
   private onDeathCallback?: () => void;
   private onDamageCallback?: (amount: number, fromDirection?: Vector3) => void;
@@ -140,6 +145,7 @@ export class Player {
     this.syncWithPhysics();
     this.updateBobbing(delta);
     this.updateTilting(delta);
+    this.updateFootsteps(delta);
     this.updateCamera();
 
     // Update current weapon
@@ -156,24 +162,19 @@ export class Player {
     if (this._isGrounded && speed > 0.1) {
       // Bob speed increases with movement speed
       const bobFactor = speed / PLAYER_CONFIG.moveSpeed;
-      this.bobTimer += delta * 10 * bobFactor;
+      this.bobTimer += delta * 12 * bobFactor;
       
-      const bobAmount = 0.05 * bobFactor;
+      const bobAmount = 0.08 * bobFactor;
       this.currentBobOffset = Math.sin(this.bobTimer) * bobAmount;
     } else {
       // Smoothly return to 0 when not moving
-      this.currentBobOffset += (0 - this.currentBobOffset) * 10 * delta;
+      this.currentBobOffset += (0 - this.currentBobOffset) * 8 * delta;
       this.bobTimer = 0;
     }
   }
 
   private updateTilting(delta: number): void {
-    // Tilt based on horizontal velocity relative to forward direction (strafing)
-    const forwardDir = new THREE.Vector3(
-      -Math.sin(this._rotation.yaw),
-      0,
-      -Math.cos(this._rotation.yaw)
-    );
+    // Strafe tilt
     const rightDir = new THREE.Vector3(
       -Math.sin(this._rotation.yaw - Math.PI / 2),
       0,
@@ -183,11 +184,42 @@ export class Player {
     const horizontalVelocity = new THREE.Vector3(this.body.velocity.x, 0, this.body.velocity.z);
     const strafeSpeed = horizontalVelocity.dot(rightDir);
     
-    this.targetTilt = -(strafeSpeed / PLAYER_CONFIG.moveSpeed) * 0.03;
+    // Tilt based on strafing
+    const strafeTilt = -(strafeSpeed / PLAYER_CONFIG.moveSpeed) * 0.05;
+    
+    // Mouse look tilt (subtle tilt when turning)
+    const mouseDelta = this.input.getMouseDelta();
+    const turnTilt = -mouseDelta.x * 2.0;
+
+    this.targetTilt = strafeTilt + turnTilt;
     
     // Smoothly interpolate current tilt
-    const tiltLerpFactor = 10;
+    const tiltLerpFactor = 8;
     this.currentTilt += (this.targetTilt - this.currentTilt) * tiltLerpFactor * delta;
+    
+    // Return to center if no input
+    if (Math.abs(this.targetTilt) < 0.001) {
+        this.currentTilt *= Math.pow(0.1, delta * 5);
+    }
+  }
+
+  private updateFootsteps(delta: number): void {
+    const horizontalVelocity = new THREE.Vector2(this.body.velocity.x, this.body.velocity.z);
+    const speed = horizontalVelocity.length();
+
+    if (this._isGrounded && speed > 1.0) {
+      this.footstepTimer -= delta;
+      if (this.footstepTimer <= 0) {
+        this.audio.play('footstep');
+        
+        // Adjust interval based on speed
+        const isSprinting = speed > PLAYER_CONFIG.moveSpeed * 1.1;
+        this.footstepTimer = isSprinting ? this.SPRINT_FOOTSTEP_INTERVAL : this.FOOTSTEP_INTERVAL;
+      }
+    }
+    else {
+      this.footstepTimer = 0.1; // Reset timer so it plays soon after starting movement
+    }
   }
 
   private checkGrounded(delta: number): void {
@@ -198,7 +230,7 @@ export class Player {
     };
     const rayEnd = {
       x: this.body.position.x,
-      y: this.body.position.y - PLAYER_CONFIG.height / 2 - 0.2,
+      y: this.body.position.y - PLAYER_CONFIG.height / 2 - 0.25, // Increased depth for more reliable detection
       z: this.body.position.z,
     };
 
@@ -219,17 +251,21 @@ export class Player {
     }
   }
 
-  public setExternalMovement(forward: number, right: number): void {
-    this.externalMovement = { forward, right };
+  public setExternalMovement(forward: number, right: number, sprint: boolean = false): void {
+    this.externalMovement = { forward, right, sprint };
+  }
+
+  public addRotation(pitch: number, yaw: number): void {
+    this._rotation.pitch -= pitch;
+    this._rotation.yaw -= yaw;
+    this._rotation.pitch = clamp(this._rotation.pitch, -HALF_PI + 0.1, HALF_PI - 0.1);
   }
 
   private handleInput(delta: number): void {
     // Mouse look (only when pointer is locked)
     if (this.input.isPointerLocked) {
       const mouseDelta = this.input.getMouseDelta();
-      this._rotation.yaw -= mouseDelta.x;
-      this._rotation.pitch -= mouseDelta.y;
-      this._rotation.pitch = clamp(this._rotation.pitch, -HALF_PI + 0.1, HALF_PI - 0.1);
+      this.addRotation(mouseDelta.y, mouseDelta.x);
     }
 
     // Keyboard movement
@@ -237,24 +273,25 @@ export class Player {
     const moveBackward = this.input.isActionPressed('moveBackward') ? 1 : 0;
     const moveLeft = this.input.isActionPressed('moveLeft') ? 1 : 0;
     const moveRight = this.input.isActionPressed('moveRight') ? 1 : 0;
+    let isSprinting = this.input.isActionPressed('sprint');
 
     let forward = moveForward - moveBackward;
     let right = moveRight - moveLeft;
 
     // Combine with external (touch) movement if present
     if (this.externalMovement) {
-      // Use whichever is greater, or combine
-      forward = Math.abs(this.externalMovement.forward) > Math.abs(forward) 
-        ? this.externalMovement.forward 
-        : forward;
-      right = Math.abs(this.externalMovement.right) > Math.abs(right) 
-        ? this.externalMovement.right 
-        : right;
+      if (Math.abs(this.externalMovement.forward) > Math.abs(forward)) {
+        forward = this.externalMovement.forward;
+        if (this.externalMovement.sprint) isSprinting = true;
+      }
+      if (Math.abs(this.externalMovement.right) > Math.abs(right)) {
+        right = this.externalMovement.right;
+      }
       
-      this.externalMovement = null; // Reset for next frame
+      this.externalMovement = null;
     }
 
-    this.move(forward, right, delta);
+    this.move(forward, right, isSprinting, delta);
 
     // Jump
     if (this.input.isActionJustPressed('jump')) {
@@ -281,11 +318,13 @@ export class Player {
     }
   }
 
-  public move(forward: number, right: number, delta: number): void {
-    const speed = PLAYER_CONFIG.moveSpeed;
+  public move(forward: number, right: number, isSprinting: boolean, delta: number): void {
+    let speed = PLAYER_CONFIG.moveSpeed;
+    if (isSprinting && forward > 0) {
+        speed *= PLAYER_CONFIG.sprintMultiplier;
+    }
 
     // Calculate movement direction based on yaw
-    // Three.js forward is -Z, so negate sin/cos
     const moveDir = new THREE.Vector3();
     const forwardDir = new THREE.Vector3(
       -Math.sin(this._rotation.yaw),
@@ -317,12 +356,8 @@ export class Player {
     const currentVelocityX = this.body.velocity.x;
     const currentVelocityZ = this.body.velocity.z;
 
-    // Smoothly interpolate towards target velocity (realistic acceleration/friction)
-    // Faster interpolation on ground, slower in air
-    const lerpFactor = this._isGrounded ? 15.0 : 2.0;
-    
-    // Apply interpolation using exponential smoothing
-    // v = lerp(current, target, 1 - exp(-speed * delta))
+    // Smoothly interpolate towards target velocity
+    const lerpFactor = this._isGrounded ? 12.0 : 3.0;
     const t = 1 - Math.exp(-lerpFactor * delta);
     
     this.body.velocity.x = currentVelocityX + (targetVelocityX - currentVelocityX) * t;

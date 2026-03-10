@@ -24,11 +24,43 @@ export class Physics {
   private bodies: Map<number, CANNON.Body> = new Map();
   private nextBodyId: number = 0;
 
+  private playerMaterial: CANNON.Material;
+  private enemyMaterial: CANNON.Material;
+  private worldMaterial: CANNON.Material;
+
   constructor() {
     this.world = new CANNON.World();
     this.world.gravity.set(0, GAME_CONFIG.gravity, 0);
     this.world.broadphase = new CANNON.SAPBroadphase(this.world);
     this.world.allowSleep = true;
+
+    // Materials
+    this.playerMaterial = new CANNON.Material('playerMaterial');
+    this.enemyMaterial = new CANNON.Material('enemyMaterial');
+    this.worldMaterial = new CANNON.Material('worldMaterial');
+
+    // Contact materials for zero friction
+    const playerWorldContact = new CANNON.ContactMaterial(
+      this.playerMaterial,
+      this.worldMaterial,
+      { friction: 0.0, restitution: 0.0 }
+    );
+    const enemyWorldContact = new CANNON.ContactMaterial(
+      this.enemyMaterial,
+      this.worldMaterial,
+      { friction: 0.0, restitution: 0.0 }
+    );
+    const playerEnemyContact = new CANNON.ContactMaterial(
+      this.playerMaterial,
+      this.enemyMaterial,
+      { friction: 0.0, restitution: 0.0 }
+    );
+
+    this.world.addContactMaterial(playerWorldContact);
+    this.world.addContactMaterial(enemyWorldContact);
+    this.world.addContactMaterial(playerEnemyContact);
+    
+    // Default contact material as fallback
     this.world.defaultContactMaterial.friction = 0.0;
     this.world.defaultContactMaterial.restitution = 0.0;
   }
@@ -151,7 +183,8 @@ export class Physics {
       fixedRotation: true,
       linearDamping: 0.1,
       angularDamping: 1.0,
-      allowSleep: false,
+      allowSleep: false, // Prevents WASD non-response when stopped
+      material: this.playerMaterial,
       collisionFilterGroup: COLLISION_GROUPS.PLAYER,
       collisionFilterMask: COLLISION_GROUPS.WORLD | COLLISION_GROUPS.ENEMY,
     });
@@ -169,6 +202,8 @@ export class Physics {
       position: new CANNON.Vec3(position.x, position.y + height / 2, position.z),
       fixedRotation: true,
       linearDamping: 0.1,
+      allowSleep: false,
+      material: this.enemyMaterial,
       collisionFilterGroup: COLLISION_GROUPS.ENEMY,
       collisionFilterMask: COLLISION_GROUPS.WORLD | COLLISION_GROUPS.PLAYER | COLLISION_GROUPS.ENEMY,
     });
@@ -189,6 +224,7 @@ export class Physics {
     const body = new CANNON.Body({
       mass: 0,
       position: new CANNON.Vec3(position.x, position.y, position.z),
+      material: this.worldMaterial,
       collisionFilterGroup: COLLISION_GROUPS.WORLD,
       collisionFilterMask: COLLISION_GROUPS.PLAYER | COLLISION_GROUPS.ENEMY,
     });
@@ -202,6 +238,7 @@ export class Physics {
     const shape = new CANNON.Plane();
     const body = new CANNON.Body({
       mass: 0,
+      material: this.worldMaterial,
       collisionFilterGroup: COLLISION_GROUPS.WORLD,
       collisionFilterMask: COLLISION_GROUPS.PLAYER | COLLISION_GROUPS.ENEMY,
     });

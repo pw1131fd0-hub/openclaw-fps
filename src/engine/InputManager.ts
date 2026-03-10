@@ -4,16 +4,17 @@ import { DEFAULT_SETTINGS } from '@/data/Config';
 type KeyBindings = Record<KeyAction, string[]>;
 
 const DEFAULT_KEY_BINDINGS: KeyBindings = {
-  moveForward: ['KeyW', 'ArrowUp'],
-  moveBackward: ['KeyS', 'ArrowDown'],
-  moveLeft: ['KeyA', 'ArrowLeft'],
-  moveRight: ['KeyD', 'ArrowRight'],
-  jump: ['Space'],
-  reload: ['KeyR'],
+  moveForward: ['KeyW', 'ArrowUp', 'w'],
+  moveBackward: ['KeyS', 'ArrowDown', 's'],
+  moveLeft: ['KeyA', 'ArrowLeft', 'a'],
+  moveRight: ['KeyD', 'ArrowRight', 'd'],
+  sprint: ['ShiftLeft', 'ShiftRight', 'Shift'],
+  jump: ['Space', ' '],
+  reload: ['KeyR', 'r'],
   fire: ['MouseLeft'],
-  weapon1: ['Digit1'],
-  weapon2: ['Digit2'],
-  weapon3: ['Digit3'],
+  weapon1: ['Digit1', '1'],
+  weapon2: ['Digit2', '2'],
+  weapon3: ['Digit3', '3'],
   pause: ['Escape'],
 };
 
@@ -33,42 +34,61 @@ export class InputManager {
   private sensitivity: number = DEFAULT_SETTINGS.mouseSensitivity;
   private invertY: boolean = DEFAULT_SETTINGS.invertY;
 
+  // Store bound methods for correct removal
+  private boundKeyDown = this.onKeyDown.bind(this);
+  private boundKeyUp = this.onKeyUp.bind(this);
+  private boundMouseDown = this.onMouseDown.bind(this);
+  private boundMouseUp = this.onMouseUp.bind(this);
+  private boundMouseMove = this.onMouseMove.bind(this);
+  private boundPointerLockChange = this.onPointerLockChange.bind(this);
+
   constructor() {
     this.setupEventListeners();
   }
 
   private setupEventListeners(): void {
     // Keyboard events
-    document.addEventListener('keydown', this.onKeyDown.bind(this));
-    document.addEventListener('keyup', this.onKeyUp.bind(this));
+    document.addEventListener('keydown', this.boundKeyDown);
+    document.addEventListener('keyup', this.boundKeyUp);
 
     // Mouse events
-    document.addEventListener('mousedown', this.onMouseDown.bind(this));
-    document.addEventListener('mouseup', this.onMouseUp.bind(this));
-    document.addEventListener('mousemove', this.onMouseMove.bind(this));
+    document.addEventListener('mousedown', this.boundMouseDown);
+    document.addEventListener('mouseup', this.boundMouseUp);
+    document.addEventListener('mousemove', this.boundMouseMove);
 
     // Pointer lock
     document.addEventListener(
       'pointerlockchange',
-      this.onPointerLockChange.bind(this)
+      this.boundPointerLockChange
     );
   }
 
   private onKeyDown(event: KeyboardEvent): void {
-    if (!this.keysPressed.has(event.code)) {
-      this.keysJustPressed.add(event.code);
+    const code = event.code;
+    const key = event.key;
+    
+    // Check both code and key for justPressed
+    if (!this.keysPressed.has(code)) {
+      this.keysJustPressed.add(code);
     }
-    this.keysPressed.add(event.code);
+    if (!this.keysPressed.has(key)) {
+      this.keysJustPressed.add(key);
+    }
+    
+    this.keysPressed.add(code);
+    this.keysPressed.add(key);
 
     // Prevent default for game keys
-    if (this.isGameKey(event.code)) {
+    if (this.isGameKey(code) || this.isGameKey(key)) {
       event.preventDefault();
     }
   }
 
   private onKeyUp(event: KeyboardEvent): void {
     this.keysPressed.delete(event.code);
+    this.keysPressed.delete(event.key);
     this.keysJustReleased.add(event.code);
+    this.keysJustReleased.add(event.key);
   }
 
   private onMouseDown(event: MouseEvent): void {
@@ -77,7 +97,8 @@ export class InputManager {
     }
     this.mouseButtons.add(event.button);
 
-    // Request pointer lock on click
+    // Request pointer lock on click if we are in a context where it's allowed
+    // We only do this if no menu is blocking the way (handled by Game state usually)
     if (!this._isPointerLocked && event.button === 0) {
       this.requestPointerLock();
     }
@@ -101,9 +122,9 @@ export class InputManager {
     );
   }
 
-  private isGameKey(code: string): boolean {
+  private isGameKey(value: string): boolean {
     for (const keys of Object.values(this.bindings)) {
-      if (keys.includes(code)) {
+      if (keys.includes(value)) {
         return true;
       }
     }
@@ -197,14 +218,14 @@ export class InputManager {
   }
 
   public dispose(): void {
-    document.removeEventListener('keydown', this.onKeyDown.bind(this));
-    document.removeEventListener('keyup', this.onKeyUp.bind(this));
-    document.removeEventListener('mousedown', this.onMouseDown.bind(this));
-    document.removeEventListener('mouseup', this.onMouseUp.bind(this));
-    document.removeEventListener('mousemove', this.onMouseMove.bind(this));
+    document.removeEventListener('keydown', this.boundKeyDown);
+    document.removeEventListener('keyup', this.boundKeyUp);
+    document.removeEventListener('mousedown', this.boundMouseDown);
+    document.removeEventListener('mouseup', this.boundMouseUp);
+    document.removeEventListener('mousemove', this.boundMouseMove);
     document.removeEventListener(
       'pointerlockchange',
-      this.onPointerLockChange.bind(this)
+      this.boundPointerLockChange
     );
   }
 }
