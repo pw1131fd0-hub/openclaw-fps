@@ -253,3 +253,14 @@ I will read `docs/PRD.md` to check its content and determine if it's in a draft 
 I will read `docs/SA.md` and `docs/SD.md`
 
 ---
+
+## [2026-03-10 13:23:33] [done] 100%
+
+已驗證老闆回饋的「移動太敏感」問題修復，包含靈敏度與移動速度調整（moveSpeed: 5.5, mouseSensitivity: 0.0007）。所有 668 個測試均已通過，專案品質達標並更新了 SD 文件。
+
+> I will read the contents of `.gemini_instructions.tmp` to understand the specific tasks I need to perform.
+I will list the files in the `docs` and `src` directories to get an overview of the project's current state and locate the relevant files for movement sensitivity.
+I will read the `docs/PRD.md`, `docs/SA.md`, and `docs/SD.md` files to evaluate their completeness and see if they reflect the current project state.
+I will read the `src/data/Config.ts`, `src/game/Player.ts`, and `src/engine/Inp
+
+---
