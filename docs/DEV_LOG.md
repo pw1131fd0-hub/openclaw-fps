@@ -148,3 +148,15 @@ copilot completed
 
 
 ---
+
+## [2026-03-10 08:02:22] [done] 100%
+
+完美達成所有 P1 功能並修復移動問題：修正物理碰撞體方向、改善移動流暢度與寫實感（Bobbing/Tilting）、修復觸控衝突、實作多地圖切換系統（競技場、倉庫、廢墟）及每 5 波的武器強化升級系統。
+
+> I will read the instructions from `.gemini_instructions.tmp` to understand the tasks I need to perform.
+I will check `src/game/Player.ts` to see how movement is implemented and verify if there are any obvious issues.
+I will check `src/engine/InputManager.ts` to verify the action mappings and ensure the keys are correctly bound.
+I will check `src/game/Game.ts` to see how the `InputManager` and `Player` are being updated and if there's any reason the input might not be working.
+I will check `src/e
+
+---
