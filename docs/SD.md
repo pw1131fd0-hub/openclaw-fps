@@ -712,10 +712,9 @@ export const PICKUP_CONFIGS: Record<PickupType, PickupConfig> = {
 
 ```typescript
 export const PLAYER_CONFIG: PlayerConfig = {
-  moveSpeed: 6.5,
+  moveSpeed: 5.5,
   jumpForce: 7,
-  mouseSensitivity: 0.001,
-  maxHealth: 100,
+  mouseSensitivity: 0.0007,
   height: 1.8,
   radius: 0.5,
 };
