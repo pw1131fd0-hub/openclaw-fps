@@ -47,7 +47,7 @@ export class TouchControls {
   private boundLookStart: (e: TouchEvent) => void;
   private boundLookMove: (e: TouchEvent) => void;
   private boundLookEnd: (e: TouchEvent) => void;
-  private eventListeners: Array<{ element: HTMLElement | Document, event: string, handler: EventListener }> = [];
+  private eventListeners: Array<{ element: HTMLElement | Document, event: string, handler: any }> = [];
 
   constructor() {
     this.container = document.createElement('div');
