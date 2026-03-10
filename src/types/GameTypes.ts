@@ -132,6 +132,8 @@ export interface MapConfig {
   playerSpawn: SpawnPoint;
   enemySpawns: SpawnPoint[];
   pickupSpawns: Vector3[];
+  obstacles?: { position: Vector3; size: { w: number; h: number; d: number } }[];
+  platforms?: { position: Vector3; size: { w: number; h: number; d: number } }[];
   bounds: {
     min: Vector3;
     max: Vector3;

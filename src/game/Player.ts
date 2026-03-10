@@ -31,6 +31,15 @@ export class Player {
   private coyoteTime: number = 0;
   private readonly MAX_COYOTE_TIME: number = 0.15;
 
+  // View bobbing and tilting
+  private bobTimer: number = 0;
+  private currentBobOffset: number = 0;
+  private currentTilt: number = 0;
+  private targetTilt: number = 0;
+
+  // External movement input (e.g. from touch)
+  private externalMovement: { forward: number; right: number } | null = null;
+
   private onDeathCallback?: () => void;
   private onDamageCallback?: (amount: number, fromDirection?: Vector3) => void;
   private onHealCallback?: (amount: number) => void;
@@ -129,6 +138,8 @@ export class Player {
     this.checkGrounded(delta);
     this.handleInput(delta);
     this.syncWithPhysics();
+    this.updateBobbing(delta);
+    this.updateTilting(delta);
     this.updateCamera();
 
     // Update current weapon
@@ -136,6 +147,47 @@ export class Player {
     if (weapon) {
       weapon.update(delta);
     }
+  }
+
+  private updateBobbing(delta: number): void {
+    const horizontalVelocity = new THREE.Vector2(this.body.velocity.x, this.body.velocity.z);
+    const speed = horizontalVelocity.length();
+
+    if (this._isGrounded && speed > 0.1) {
+      // Bob speed increases with movement speed
+      const bobFactor = speed / PLAYER_CONFIG.moveSpeed;
+      this.bobTimer += delta * 10 * bobFactor;
+      
+      const bobAmount = 0.05 * bobFactor;
+      this.currentBobOffset = Math.sin(this.bobTimer) * bobAmount;
+    } else {
+      // Smoothly return to 0 when not moving
+      this.currentBobOffset += (0 - this.currentBobOffset) * 10 * delta;
+      this.bobTimer = 0;
+    }
+  }
+
+  private updateTilting(delta: number): void {
+    // Tilt based on horizontal velocity relative to forward direction (strafing)
+    const forwardDir = new THREE.Vector3(
+      -Math.sin(this._rotation.yaw),
+      0,
+      -Math.cos(this._rotation.yaw)
+    );
+    const rightDir = new THREE.Vector3(
+      -Math.sin(this._rotation.yaw - Math.PI / 2),
+      0,
+      -Math.cos(this._rotation.yaw - Math.PI / 2)
+    );
+
+    const horizontalVelocity = new THREE.Vector3(this.body.velocity.x, 0, this.body.velocity.z);
+    const strafeSpeed = horizontalVelocity.dot(rightDir);
+    
+    this.targetTilt = -(strafeSpeed / PLAYER_CONFIG.moveSpeed) * 0.03;
+    
+    // Smoothly interpolate current tilt
+    const tiltLerpFactor = 10;
+    this.currentTilt += (this.targetTilt - this.currentTilt) * tiltLerpFactor * delta;
   }
 
   private checkGrounded(delta: number): void {
@@ -167,6 +219,10 @@ export class Player {
     }
   }
 
+  public setExternalMovement(forward: number, right: number): void {
+    this.externalMovement = { forward, right };
+  }
+
   private handleInput(delta: number): void {
     // Mouse look (only when pointer is locked)
     if (this.input.isPointerLocked) {
@@ -176,14 +232,27 @@ export class Player {
       this._rotation.pitch = clamp(this._rotation.pitch, -HALF_PI + 0.1, HALF_PI - 0.1);
     }
 
-    // Movement (always active)
+    // Keyboard movement
     const moveForward = this.input.isActionPressed('moveForward') ? 1 : 0;
     const moveBackward = this.input.isActionPressed('moveBackward') ? 1 : 0;
     const moveLeft = this.input.isActionPressed('moveLeft') ? 1 : 0;
     const moveRight = this.input.isActionPressed('moveRight') ? 1 : 0;
 
-    const forward = moveForward - moveBackward;
-    const right = moveRight - moveLeft;
+    let forward = moveForward - moveBackward;
+    let right = moveRight - moveLeft;
+
+    // Combine with external (touch) movement if present
+    if (this.externalMovement) {
+      // Use whichever is greater, or combine
+      forward = Math.abs(this.externalMovement.forward) > Math.abs(forward) 
+        ? this.externalMovement.forward 
+        : forward;
+      right = Math.abs(this.externalMovement.right) > Math.abs(right) 
+        ? this.externalMovement.right 
+        : right;
+      
+      this.externalMovement = null; // Reset for next frame
+    }
 
     this.move(forward, right, delta);
 
@@ -278,10 +347,10 @@ export class Player {
   }
 
   private updateCamera(): void {
-    // Position camera at player's eye level
+    // Position camera at player's eye level + bobbing offset
     this.camera.position.set(
       this._position.x,
-      this._position.y + PLAYER_CONFIG.height * 0.4,
+      this._position.y + PLAYER_CONFIG.height * 0.4 + this.currentBobOffset,
       this._position.z
     );
 
@@ -289,6 +358,7 @@ export class Player {
     this.camera.rotation.order = 'YXZ';
     this.camera.rotation.y = this._rotation.yaw;
     this.camera.rotation.x = this._rotation.pitch;
+    this.camera.rotation.z = this.currentTilt; // Apply strafe tilt
   }
 
   public takeDamage(amount: number, fromDirection?: Vector3): void {
@@ -368,6 +438,12 @@ export class Player {
     if (this.onWeaponSwitchCallback) {
       this.onWeaponSwitchCallback(oldWeapon, type);
     }
+  }
+
+  public applyWeaponUpgrade(upgradeType: 'damage' | 'fireRate' | 'magazineSize'): void {
+    this.weapons.forEach((weapon) => {
+      weapon.applyUpgrade(upgradeType);
+    });
   }
 
   public addAmmo(type: WeaponType, amount: number): void {

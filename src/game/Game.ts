@@ -11,7 +11,7 @@ import { HUD } from '@/ui/HUD';
 import { Menu } from '@/ui/Menu';
 import { TouchControls } from '@/ui/TouchControls';
 import { Storage } from '@/data/Storage';
-import { GAME_CONFIG, ARENA_MAP } from '@/data/Config';
+import { GAME_CONFIG, ARENA_MAP, MAPS } from '@/data/Config';
 
 export class Game {
   private uiContainer: HTMLElement;
@@ -173,6 +173,14 @@ export class Game {
         this.onWaveCompleteCallback(wave);
       }
 
+      // Check for upgrades every 5 waves
+      if (wave % 5 === 0) {
+        this._state = 'paused';
+        this.input.exitPointerLock();
+        this.menu.showUpgradeMenu(wave);
+        return;
+      }
+
       // Start next wave after intermission
       setTimeout(() => {
         if (this._state === 'playing') {
@@ -257,8 +265,8 @@ export class Game {
   }
 
   private setupMenuCallbacks(): void {
-    this.menu.onStartGame(() => {
-      this.start();
+    this.menu.onStartGame((mapId) => {
+      this.start(mapId);
     });
 
     this.menu.onResumeGame(() => {
@@ -272,6 +280,23 @@ export class Game {
     this.menu.onSettingsChange((settings) => {
       this.applySettings(settings);
       this.storage.saveSettings(settings);
+    });
+
+    this.menu.onUpgradeChoose((upgrade) => {
+      // Apply upgrade to all weapons
+      this.player.applyWeaponUpgrade(upgrade);
+
+      this.menu.hide();
+      this.input.requestPointerLock();
+      this._state = 'playing';
+
+      // Start next wave after upgrade
+      const nextWave = this._stats.wave + 1;
+      setTimeout(() => {
+        if (this._state === 'playing') {
+          this.waveManager.startWave(nextWave);
+        }
+      }, 1000);
     });
   }
 
@@ -315,10 +340,15 @@ export class Game {
     return { ...this._stats };
   }
 
-  public start(): void {
-    console.log('🦞 Game starting...');
+  public start(mapId: string = 'arena'): void {
+    console.log(`🦞 Game starting on map: ${mapId}`);
     this._state = 'playing';
     this._stats = this.createEmptyStats();
+
+    const mapConfig = MAPS[mapId] || MAPS.arena;
+
+    // Rebuild arena
+    this.arena.build(mapConfig);
 
     this.menu.hide();
     this.hud.show();
@@ -331,10 +361,10 @@ export class Game {
       this.input.requestPointerLock();
     }
     
-    // ...
-
-    // Reset player
-    this.player.reset(ARENA_MAP.playerSpawn.position);
+    // Reset systems with map-specific data
+    this.player.reset(mapConfig.playerSpawn.position);
+    this.waveManager.setSpawnPoints(this.arena.getEnemySpawnPoints());
+    this.pickupManager.setSpawnPoints(this.arena.getPickupSpawnPoints());
 
     // Reset wave manager
     this.waveManager.reset();
@@ -485,28 +515,15 @@ export class Game {
     const movement = this.touchControls.getMovementVector();
     // Look is handled via touch controls directly
 
-    // Apply movement
+    // Apply movement via external input system
     if (movement.x !== 0 || movement.y !== 0) {
-      this.player.move(movement.y, movement.x, delta);
+      this.player.setExternalMovement(movement.y, movement.x);
     }
 
     // Apply look (handled differently for touch)
     // Touch look is handled via the player's look method
-
-    // Fire
-    if (this.touchControls.isFirePressed()) {
-      this.player.fire();
-    }
-
-    // Jump
-    if (this.touchControls.isJumpPressed()) {
-      this.player.jump();
-    }
-
-    // Reload
-    if (this.touchControls.isReloadPressed()) {
-      this.player.reload();
-    }
+    
+    // ...
   }
 
   public onGameOver(callback: (stats: GameStats) => void): void {

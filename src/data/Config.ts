@@ -167,37 +167,118 @@ export const DEFAULT_SETTINGS: GameSettings = {
   graphicsQuality: 'high',
 };
 
-// Arena map configuration
-export const ARENA_MAP: MapConfig = {
-  id: 'arena',
-  name: '競技場',
-  playerSpawn: {
-    position: { x: 0, y: 1, z: 0 },
-    rotation: 0,
+// Map configurations
+export const MAPS: Record<string, MapConfig> = {
+  arena: {
+    id: 'arena',
+    name: '基礎競技場',
+    playerSpawn: {
+      position: { x: 0, y: 1, z: 0 },
+      rotation: 0,
+    },
+    enemySpawns: [
+      { position: { x: 20, y: 1, z: 20 } },
+      { position: { x: -20, y: 1, z: 20 } },
+      { position: { x: 20, y: 1, z: -20 } },
+      { position: { x: -20, y: 1, z: -20 } },
+      { position: { x: 0, y: 1, z: 25 } },
+      { position: { x: 0, y: 1, z: -25 } },
+      { position: { x: 25, y: 1, z: 0 } },
+      { position: { x: -25, y: 1, z: 0 } },
+    ],
+    pickupSpawns: [
+      { x: 10, y: 0.5, z: 10 },
+      { x: -10, y: 0.5, z: 10 },
+      { x: 10, y: 0.5, z: -10 },
+      { x: -10, y: 0.5, z: -10 },
+      { x: 0, y: 0.5, z: 15 },
+      { x: 0, y: 0.5, z: -15 },
+    ],
+    bounds: {
+      min: { x: -30, y: 0, z: -30 },
+      max: { x: 30, y: 20, z: 30 },
+    },
   },
-  enemySpawns: [
-    { position: { x: 20, y: 1, z: 20 } },
-    { position: { x: -20, y: 1, z: 20 } },
-    { position: { x: 20, y: 1, z: -20 } },
-    { position: { x: -20, y: 1, z: -20 } },
-    { position: { x: 0, y: 1, z: 25 } },
-    { position: { x: 0, y: 1, z: -25 } },
-    { position: { x: 25, y: 1, z: 0 } },
-    { position: { x: -25, y: 1, z: 0 } },
-  ],
-  pickupSpawns: [
-    { x: 10, y: 0.5, z: 10 },
-    { x: -10, y: 0.5, z: 10 },
-    { x: 10, y: 0.5, z: -10 },
-    { x: -10, y: 0.5, z: -10 },
-    { x: 0, y: 0.5, z: 15 },
-    { x: 0, y: 0.5, z: -15 },
-  ],
-  bounds: {
-    min: { x: -30, y: 0, z: -30 },
-    max: { x: 30, y: 20, z: 30 },
+  warehouse: {
+    id: 'warehouse',
+    name: '工業倉庫',
+    playerSpawn: {
+      position: { x: -20, y: 1, z: -20 },
+      rotation: Math.PI / 4,
+    },
+    enemySpawns: [
+      { position: { x: 20, y: 1, z: 20 } },
+      { position: { x: 20, y: 1, z: -20 } },
+      { position: { x: -20, y: 1, z: 20 } },
+      { position: { x: 0, y: 1, z: 0 } },
+    ],
+    pickupSpawns: [
+      { x: 0, y: 0.5, z: 10 },
+      { x: 0, y: 0.5, z: -10 },
+      { x: 10, y: 0.5, z: 0 },
+      { x: -10, y: 0.5, z: 0 },
+    ],
+    obstacles: [
+      // Central large crate
+      { position: { x: 0, y: 2, z: 0 }, size: { w: 6, h: 4, d: 6 } },
+      // Corner crates
+      { position: { x: 15, y: 1, z: 15 }, size: { w: 4, h: 2, d: 4 } },
+      { position: { x: -15, y: 1, z: 15 }, size: { w: 4, h: 2, d: 4 } },
+      { position: { x: 15, y: 1, z: -15 }, size: { w: 4, h: 2, d: 4 } },
+      // Side walls
+      { position: { x: 0, y: 1.5, z: 18 }, size: { w: 10, h: 3, d: 1 } },
+      { position: { x: 0, y: 1.5, z: -18 }, size: { w: 10, h: 3, d: 1 } },
+    ],
+    platforms: [
+      { position: { x: 0, y: 4, z: 0 }, size: { w: 8, h: 0.5, d: 8 } },
+    ],
+    bounds: {
+      min: { x: -25, y: 0, z: -25 },
+      max: { x: 25, y: 15, z: 25 },
+    },
+  },
+  ruins: {
+    id: 'ruins',
+    name: '城市廢墟',
+    playerSpawn: {
+      position: { x: 0, y: 1, z: 25 },
+      rotation: Math.PI,
+    },
+    enemySpawns: [
+      { position: { x: 15, y: 1, z: 0 } },
+      { position: { x: -15, y: 1, z: 0 } },
+      { position: { x: 0, y: 1, z: -20 } },
+      { position: { x: 20, y: 1, z: 20 } },
+      { position: { x: -20, y: 1, z: 20 } },
+    ],
+    pickupSpawns: [
+      { x: 5, y: 0.5, z: 5 },
+      { x: -5, y: 0.5, z: -5 },
+      { x: 0, y: 0.5, z: 0 },
+    ],
+    obstacles: [
+      // Scattered debris
+      { position: { x: 8, y: 0.5, z: 8 }, size: { w: 2, h: 1, d: 2 } },
+      { position: { x: -8, y: 1, z: -8 }, size: { w: 3, h: 2, d: 3 } },
+      { position: { x: 12, y: 2, z: -10 }, size: { w: 2, h: 4, d: 2 } },
+      { position: { x: -12, y: 1.5, z: 5 }, size: { w: 4, h: 3, d: 2 } },
+      // Broken walls
+      { position: { x: 0, y: 1, z: 0 }, size: { w: 8, h: 2, d: 1 } },
+      { position: { x: 10, y: 1, z: 0 }, size: { w: 1, h: 2, d: 8 } },
+    ],
+    platforms: [
+      { position: { x: 20, y: 3, z: -20 }, size: { w: 6, h: 0.5, d: 6 } },
+      { position: { x: -20, y: 3, z: -20 }, size: { w: 6, h: 0.5, d: 6 } },
+    ],
+    bounds: {
+      min: { x: -30, y: 0, z: -30 },
+      max: { x: 30, y: 20, z: 30 },
+    },
   },
 };
+
+// For backward compatibility
+export const ARENA_MAP = MAPS.arena;
 
 // Color palette (from PRD)
 export const COLORS = {

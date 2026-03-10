@@ -3,13 +3,16 @@ import { DEFAULT_SETTINGS, colorToCSS, COLORS } from '@/data/Config';
 
 export class Menu {
   private container: HTMLElement;
-  private currentScreen: 'main' | 'pause' | 'settings' | 'gameOver' | 'hidden' = 'hidden';
+  private currentScreen: 'main' | 'pause' | 'settings' | 'gameOver' | 'upgrade' | 'hidden' = 'hidden';
   private settings: GameSettings = { ...DEFAULT_SETTINGS };
 
-  private onStartGameCallback?: () => void;
+  private onStartGameCallback?: (mapId: string) => void;
   private onResumeGameCallback?: () => void;
   private onRestartGameCallback?: () => void;
   private onSettingsChangeCallback?: (settings: GameSettings) => void;
+  private onUpgradeChooseCallback?: (upgrade: 'damage' | 'fireRate' | 'magazineSize') => void;
+
+  private selectedMapId: string = 'arena';
 
   constructor() {
     this.container = document.createElement('div');
@@ -271,6 +274,15 @@ export class Menu {
         <h1 class="menu-title">OPENCLAW</h1>
         <p class="menu-subtitle">網頁第一人稱射擊遊戲</p>
         
+        <div class="map-selection" style="margin-bottom: 20px">
+          <p style="color: #8892A0; font-size: 14px; margin-bottom: 10px">選擇地圖</p>
+          <div style="display: flex; gap: 10px; justify-content: center">
+            <button class="menu-button ${this.selectedMapId === 'arena' ? 'primary' : ''}" style="flex: 1; padding: 10px; font-size: 14px" id="map-arena">競技場</button>
+            <button class="menu-button ${this.selectedMapId === 'warehouse' ? 'primary' : ''}" style="flex: 1; padding: 10px; font-size: 14px" id="map-warehouse">倉庫</button>
+            <button class="menu-button ${this.selectedMapId === 'ruins' ? 'primary' : ''}" style="flex: 1; padding: 10px; font-size: 14px" id="map-ruins">廢墟</button>
+          </div>
+        </div>
+
         <button class="menu-button primary" id="btn-start">開始遊戲</button>
         <button class="menu-button" id="btn-settings">設定</button>
         
@@ -278,9 +290,24 @@ export class Menu {
       </div>
     `;
 
+    this.bindButton('map-arena', () => {
+      this.selectedMapId = 'arena';
+      this.showMainMenu();
+    });
+
+    this.bindButton('map-warehouse', () => {
+      this.selectedMapId = 'warehouse';
+      this.showMainMenu();
+    });
+
+    this.bindButton('map-ruins', () => {
+      this.selectedMapId = 'ruins';
+      this.showMainMenu();
+    });
+
     this.bindButton('btn-start', () => {
       if (this.onStartGameCallback) {
-        this.onStartGameCallback();
+        this.onStartGameCallback(this.selectedMapId);
       }
     });
 
@@ -416,6 +443,45 @@ export class Menu {
     });
   }
 
+  public showUpgradeMenu(wave: number): void {
+    this.currentScreen = 'upgrade';
+    this.container.classList.remove('hidden');
+    this.container.innerHTML = `
+      <div class="menu-overlay"></div>
+      <div class="menu-content">
+        <h1 class="menu-title">武器升級</h1>
+        <p class="menu-subtitle">完成第 ${wave} 波！請選擇一項永久強化：</p>
+        
+        <button class="menu-button primary" id="upgrade-damage">
+          <div style="font-size: 20px">💥 增加傷害</div>
+          <div style="font-size: 12px; opacity: 0.7">+20% 所有武器傷害</div>
+        </button>
+        
+        <button class="menu-button primary" id="upgrade-firerate">
+          <div style="font-size: 20px">🔫 增加射速</div>
+          <div style="font-size: 12px; opacity: 0.7">+20% 所有武器射速</div>
+        </button>
+        
+        <button class="menu-button primary" id="upgrade-magazine">
+          <div style="font-size: 20px">🔋 增加彈匣</div>
+          <div style="font-size: 12px; opacity: 0.7">+20% 彈匣容量與裝彈</div>
+        </button>
+      </div>
+    `;
+
+    this.bindButton('upgrade-damage', () => {
+      if (this.onUpgradeChooseCallback) this.onUpgradeChooseCallback('damage');
+    });
+
+    this.bindButton('upgrade-firerate', () => {
+      if (this.onUpgradeChooseCallback) this.onUpgradeChooseCallback('fireRate');
+    });
+
+    this.bindButton('upgrade-magazine', () => {
+      if (this.onUpgradeChooseCallback) this.onUpgradeChooseCallback('magazineSize');
+    });
+  }
+
   public showGameOverScreen(stats: GameStats, highScore: number): void {
     this.currentScreen = 'gameOver';
     this.container.classList.remove('hidden');
@@ -510,7 +576,7 @@ export class Menu {
     }
   }
 
-  public onStartGame(callback: () => void): void {
+  public onStartGame(callback: (mapId: string) => void): void {
     this.onStartGameCallback = callback;
   }
 
@@ -524,6 +590,10 @@ export class Menu {
 
   public onSettingsChange(callback: (settings: GameSettings) => void): void {
     this.onSettingsChangeCallback = callback;
+  }
+
+  public onUpgradeChoose(callback: (upgrade: 'damage' | 'fireRate' | 'magazineSize') => void): void {
+    this.onUpgradeChooseCallback = callback;
   }
 
   public getSettings(): GameSettings {

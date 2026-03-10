@@ -15,6 +15,14 @@ export class Weapon {
   private lastFireTime: number = 0;
   private reloadTimer: number | null = null;
 
+  // Modifiers from upgrades
+  private modifiers = {
+    damageMultiplier: 1.0,
+    fireRateMultiplier: 1.0,
+    magazineSizeMultiplier: 1.0,
+    reloadTimeMultiplier: 1.0,
+  };
+
   private physics: Physics;
   private audio: AudioManager;
   private getPlayerPosition: () => THREE.Vector3;
@@ -56,8 +64,27 @@ export class Weapon {
     if (this._currentAmmo <= 0) return false;
 
     const now = performance.now();
-    const fireInterval = 1000 / this.config.fireRate;
+    const baseFireInterval = 1000 / this.config.fireRate;
+    const fireInterval = baseFireInterval / this.modifiers.fireRateMultiplier;
     return now - this.lastFireTime >= fireInterval;
+  }
+
+  public applyUpgrade(type: 'damage' | 'fireRate' | 'magazineSize'): void {
+    switch (type) {
+      case 'damage':
+        this.modifiers.damageMultiplier += 0.2; // +20% damage
+        break;
+      case 'fireRate':
+        this.modifiers.fireRateMultiplier += 0.2; // +20% fire rate
+        break;
+      case 'magazineSize':
+        this.modifiers.magazineSizeMultiplier += 0.2; // +20% magazine size
+        // Increase current ammo immediately if possible
+        const currentMax = Math.round(this.config.magazineSize * this.modifiers.magazineSizeMultiplier);
+        const extra = Math.round(this.config.magazineSize * 0.2);
+        this._currentAmmo = Math.min(this._currentAmmo + extra, currentMax);
+        break;
+    }
   }
 
   public setOnHitEnemy(
@@ -142,9 +169,11 @@ export class Weapon {
         const bodyHeight = 1.8; // Approximate enemy height
         const isHeadshot = hitY > bodyY + bodyHeight * 0.3;
 
-        const damage = isHeadshot
+        const baseDamage = isHeadshot
           ? this.config.damage * this.config.headshotMultiplier
           : this.config.damage;
+        
+        const damage = baseDamage * this.modifiers.damageMultiplier;
 
         if (this.onHitEnemy) {
           this.onHitEnemy(entityId, damage, isHeadshot, rayResult.point!);
@@ -174,21 +203,23 @@ export class Weapon {
 
   public reload(): void {
     if (this._isReloading) return;
-    if (this._currentAmmo >= this.config.magazineSize) return;
+    const currentMax = Math.round(this.config.magazineSize * this.modifiers.magazineSizeMultiplier);
+    if (this._currentAmmo >= currentMax) return;
     if (this._reserveAmmo <= 0) return;
 
     this._isReloading = true;
     this.audio.play('reload');
 
     this.reloadTimer = window.setTimeout(() => {
-      const needed = this.config.magazineSize - this._currentAmmo;
+      const currentMax = Math.round(this.config.magazineSize * this.modifiers.magazineSizeMultiplier);
+      const needed = currentMax - this._currentAmmo;
       const toLoad = Math.min(needed, this._reserveAmmo);
 
       this._currentAmmo += toLoad;
       this._reserveAmmo -= toLoad;
       this._isReloading = false;
       this.reloadTimer = null;
-    }, this.config.reloadTime);
+    }, this.config.reloadTime * this.modifiers.reloadTimeMultiplier);
   }
 
   public cancelReload(): void {

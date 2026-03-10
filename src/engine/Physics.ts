@@ -67,11 +67,14 @@ export class Physics {
     const result = new CANNON.RaycastResult();
     const ray = new CANNON.Ray(rayFrom, rayTo);
     
+    ray.collisionFilterMask = options.collisionFilterMask !== undefined ? options.collisionFilterMask : -1;
+    ray.skipBackfaces = options.skipBackfaces !== undefined ? options.skipBackfaces : true;
+
     ray.intersectWorld(this.world, {
       mode: CANNON.Ray.CLOSEST,
       result: result,
-      skipBackfaces: options.skipBackfaces !== undefined ? options.skipBackfaces : true,
-      collisionFilterMask: options.collisionFilterMask !== undefined ? options.collisionFilterMask : -1,
+      skipBackfaces: ray.skipBackfaces,
+      collisionFilterMask: ray.collisionFilterMask,
     });
 
     if (result.hasHit) {
@@ -105,10 +108,13 @@ export class Physics {
     const results: RaycastResult[] = [];
 
     const ray = new CANNON.Ray(rayFrom, rayTo);
+    ray.collisionFilterMask = options.collisionFilterMask !== undefined ? options.collisionFilterMask : -1;
+    ray.skipBackfaces = options.skipBackfaces !== undefined ? options.skipBackfaces : true;
+
     ray.intersectWorld(this.world, {
       mode: CANNON.Ray.ALL,
-      skipBackfaces: options.skipBackfaces !== undefined ? options.skipBackfaces : true,
-      collisionFilterMask: options.collisionFilterMask !== undefined ? options.collisionFilterMask : -1,
+      skipBackfaces: ray.skipBackfaces,
+      collisionFilterMask: ray.collisionFilterMask,
       callback: (result: CANNON.RaycastResult) => {
         results.push({
           hit: true,
@@ -150,9 +156,7 @@ export class Physics {
       collisionFilterMask: COLLISION_GROUPS.WORLD | COLLISION_GROUPS.ENEMY,
     });
 
-    const quaternion = new CANNON.Quaternion();
-    quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-    body.addShape(shape, new CANNON.Vec3(0, 0, 0), quaternion);
+    body.addShape(shape, new CANNON.Vec3(0, 0, 0));
 
     return body;
   }
@@ -169,9 +173,7 @@ export class Physics {
       collisionFilterMask: COLLISION_GROUPS.WORLD | COLLISION_GROUPS.PLAYER | COLLISION_GROUPS.ENEMY,
     });
 
-    const quaternion = new CANNON.Quaternion();
-    quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-    body.addShape(shape, new CANNON.Vec3(0, 0, 0), quaternion);
+    body.addShape(shape, new CANNON.Vec3(0, 0, 0));
 
     return body;
   }
@@ -187,10 +189,11 @@ export class Physics {
     const body = new CANNON.Body({
       mass: 0,
       position: new CANNON.Vec3(position.x, position.y, position.z),
-      shape: shape,
       collisionFilterGroup: COLLISION_GROUPS.WORLD,
       collisionFilterMask: COLLISION_GROUPS.PLAYER | COLLISION_GROUPS.ENEMY,
     });
+
+    body.addShape(shape);
 
     return body;
   }
@@ -199,10 +202,10 @@ export class Physics {
     const shape = new CANNON.Plane();
     const body = new CANNON.Body({
       mass: 0,
-      shape: shape,
       collisionFilterGroup: COLLISION_GROUPS.WORLD,
       collisionFilterMask: COLLISION_GROUPS.PLAYER | COLLISION_GROUPS.ENEMY,
     });
+    body.addShape(shape);
     body.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
     return body;
   }

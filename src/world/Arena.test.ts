@@ -139,12 +139,14 @@ describe('Arena', () => {
 
   describe('getEnemySpawnPoints()', () => {
     it('should return array of enemy spawn points', () => {
+      arena.build();
       const points = arena.getEnemySpawnPoints();
       
       expect(Array.isArray(points)).toBe(true);
     });
 
     it('should have spawn points with x, y, z coordinates', () => {
+      arena.build();
       const points = arena.getEnemySpawnPoints();
       
       if (points.length > 0) {
@@ -156,6 +158,7 @@ describe('Arena', () => {
     });
 
     it('should return multiple spawn points', () => {
+      arena.build();
       const points = arena.getEnemySpawnPoints();
       
       expect(points.length).toBeGreaterThan(0);
@@ -164,12 +167,14 @@ describe('Arena', () => {
 
   describe('getPlayerSpawnPoint()', () => {
     it('should return player spawn point', () => {
+      arena.build();
       const point = arena.getPlayerSpawnPoint();
       
       expect(point).toBeDefined();
     });
 
     it('should have x, y, z coordinates', () => {
+      arena.build();
       const point = arena.getPlayerSpawnPoint();
       
       expect(point).toHaveProperty('x');
@@ -178,6 +183,7 @@ describe('Arena', () => {
     });
 
     it('should return consistent spawn point', () => {
+      arena.build();
       const point1 = arena.getPlayerSpawnPoint();
       const point2 = arena.getPlayerSpawnPoint();
       
