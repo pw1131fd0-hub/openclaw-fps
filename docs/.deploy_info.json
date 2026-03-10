@@ -1,8 +1,8 @@
 {
-  "deployed_at": "2026-03-10T01:12:25Z",
-  "method": "npm run preview (via screen)",
+  "deployed_at": "2026-03-10T04:32:00Z",
+  "method": "npm start",
   "ports": [3001],
   "urls": ["http://localhost:3001"],
-  "pid_or_container": "2248508",
+  "pid_or_container": "2260837",
   "status": "running"
 }
