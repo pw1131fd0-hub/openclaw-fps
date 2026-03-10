@@ -160,3 +160,12 @@ I will check `src/game/Game.ts` to see how the `InputManager` and `Player` are b
 I will check `src/e
 
 ---
+
+## [2026-03-10 08:20:38] [done] 100%
+
+全面修復移動功能、增強輸入系統魯棒性並提升遊戲動作真實感。
+
+> <promise>Read and follow .gemini_instructions.tmp precisely. When done, delete it.</promise>
+
+
+---
