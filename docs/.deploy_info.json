@@ -1,8 +1,8 @@
 {
-  "deployed_at": "2026-03-10T00:26:00Z",
-  "method": "npm preview",
+  "deployed_at": "2026-03-10T00:56:07Z",
+  "method": "npm build && vite preview (screen)",
   "ports": [3001],
   "urls": ["http://localhost:3001"],
-  "pid_or_container": "2241597",
+  "pid_or_container": "2246383.openclaw",
   "status": "running"
 }

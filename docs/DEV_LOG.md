@@ -169,3 +169,21 @@ I will check `src/e
 
 
 ---
+
+## [2026-03-10 08:46:50] [done] 100%
+
+全面重構輸入系統為基於 event.code 的強健模式，修復移動失效問題；優化移動靈敏度，新增著地衝擊、動態準星與射擊後座力，顯著提升遊戲真實感。
+
+> I will initialize the Ralph loop state using the provided arguments.
+
+I will locate the setup script to initialize the Ralph loop state.
+
+I will check the `.gemini/ralph/` directory to see if the state already exists or if there are any scripts there.
+
+I will read the `.gemini_instructions.tmp` file to understand the task and find any clues about the environment setup.
+
+I will read the `package.json` file to understand the project's dependencies and available scripts.
+
+I will read the `src/engin
+
+---
