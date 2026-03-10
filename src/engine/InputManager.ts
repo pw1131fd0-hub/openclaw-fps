@@ -64,8 +64,31 @@ export class InputManager {
   }
 
   private onKeyDown(event: KeyboardEvent): void {
-    const code = event.code;
-    
+    let code = event.code;
+
+    // Fallback for browsers with poor event.code support
+    if (!code && event.key) {
+      const keyMap: Record<string, string> = {
+        'w': 'KeyW', 'W': 'KeyW',
+        'a': 'KeyA', 'A': 'KeyA',
+        's': 'KeyS', 'S': 'KeyS',
+        'd': 'KeyD', 'D': 'KeyD',
+        ' ': 'Space',
+        'r': 'KeyR', 'R': 'KeyR',
+        '1': 'Digit1',
+        '2': 'Digit2',
+        '3': 'Digit3',
+        'Escape': 'Escape',
+        'ArrowUp': 'ArrowUp',
+        'ArrowDown': 'ArrowDown',
+        'ArrowLeft': 'ArrowLeft',
+        'ArrowRight': 'ArrowRight'
+      };
+      code = keyMap[event.key] || event.key;
+    }
+
+    if (!code) return;
+
     // Check code for justPressed
     if (!this.keysPressed.has(code)) {
       this.keysJustPressed.add(code);
@@ -80,8 +103,33 @@ export class InputManager {
   }
 
   private onKeyUp(event: KeyboardEvent): void {
-    this.keysPressed.delete(event.code);
-    this.keysJustReleased.add(event.code);
+    let code = event.code;
+
+    // Same fallback for KeyUp
+    if (!code && event.key) {
+      const keyMap: Record<string, string> = {
+        'w': 'KeyW', 'W': 'KeyW',
+        'a': 'KeyA', 'A': 'KeyA',
+        's': 'KeyS', 'S': 'KeyS',
+        'd': 'KeyD', 'D': 'KeyD',
+        ' ': 'Space',
+        'r': 'KeyR', 'R': 'KeyR',
+        '1': 'Digit1',
+        '2': 'Digit2',
+        '3': 'Digit3',
+        'Escape': 'Escape',
+        'ArrowUp': 'ArrowUp',
+        'ArrowDown': 'ArrowDown',
+        'ArrowLeft': 'ArrowLeft',
+        'ArrowRight': 'ArrowRight'
+      };
+      code = keyMap[event.key] || event.key;
+    }
+
+    if (code) {
+      this.keysPressed.delete(code);
+      this.keysJustReleased.add(code);
+    }
   }
 
   private onMouseDown(event: MouseEvent): void {

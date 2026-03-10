@@ -217,17 +217,25 @@ export class Player {
     const horizontalVelocity = new THREE.Vector2(this.body.velocity.x, this.body.velocity.z);
     const speed = horizontalVelocity.length();
 
-    if (this._isGrounded && speed > 0.1) {
-      // Bob speed increases with movement speed
-      const bobFactor = speed / PLAYER_CONFIG.moveSpeed;
-      this.bobTimer += delta * 12 * bobFactor;
-      
-      const bobAmount = 0.08 * bobFactor;
-      this.currentBobOffset = Math.sin(this.bobTimer) * bobAmount;
+    if (this._isGrounded) {
+      if (speed > 0.1) {
+        // Walking/Sprinting bob
+        const bobFactor = speed / PLAYER_CONFIG.moveSpeed;
+        const bobSpeed = speed > PLAYER_CONFIG.moveSpeed * 1.1 ? 16 : 12;
+        this.bobTimer += delta * bobSpeed;
+        
+        const bobAmount = 0.08 * bobFactor;
+        const targetBob = Math.sin(this.bobTimer) * bobAmount;
+        this.currentBobOffset += (targetBob - this.currentBobOffset) * 10 * delta;
+      } else {
+        // Idle breathing bob
+        this.bobTimer += delta * 2;
+        const targetBob = Math.sin(this.bobTimer) * 0.02;
+        this.currentBobOffset += (targetBob - this.currentBobOffset) * 2 * delta;
+      }
     } else {
-      // Smoothly return to 0 when not moving
-      this.currentBobOffset += (0 - this.currentBobOffset) * 8 * delta;
-      this.bobTimer = 0;
+      // Return to zero when in air
+      this.currentBobOffset += (0 - this.currentBobOffset) * 4 * delta;
     }
   }
 
@@ -242,23 +250,18 @@ export class Player {
     const horizontalVelocity = new THREE.Vector3(this.body.velocity.x, 0, this.body.velocity.z);
     const strafeSpeed = horizontalVelocity.dot(rightDir);
     
-    // Tilt based on strafing
-    const strafeTilt = -(strafeSpeed / PLAYER_CONFIG.moveSpeed) * 0.05;
+    // Tilt based on strafing (more pronounced)
+    const strafeTilt = -(strafeSpeed / PLAYER_CONFIG.moveSpeed) * 0.08;
     
     // Mouse look tilt (subtle tilt when turning)
     const mouseDelta = this.input.getMouseDelta();
-    const turnTilt = -mouseDelta.x * 2.0;
+    const turnTilt = -mouseDelta.x * 1.5;
 
     this.targetTilt = strafeTilt + turnTilt;
     
     // Smoothly interpolate current tilt
-    const tiltLerpFactor = 8;
+    const tiltLerpFactor = 10;
     this.currentTilt += (this.targetTilt - this.currentTilt) * tiltLerpFactor * delta;
-    
-    // Return to center if no input
-    if (Math.abs(this.targetTilt) < 0.001) {
-        this.currentTilt *= Math.pow(0.1, delta * 5);
-    }
   }
 
   private updateFootsteps(delta: number): void {
@@ -447,6 +450,9 @@ export class Player {
     this.canJump = false;
     this.coyoteTime = 0;
     this._isGrounded = false;
+    
+    // Slight upward camera kick on jump
+    this.currentBobOffset = 0.08;
   }
 
   public syncWithPhysics(): void {
@@ -457,20 +463,7 @@ export class Player {
     );
   }
 
-  private updateCamera(): void {
-    // Position camera at player's eye level + bobbing offset
-    this.camera.position.set(
-      this._position.x,
-      this._position.y + PLAYER_CONFIG.height * 0.4 + this.currentBobOffset,
-      this._position.z
-    );
 
-    // Apply rotation
-    this.camera.rotation.order = 'YXZ';
-    this.camera.rotation.y = this._rotation.yaw;
-    this.camera.rotation.x = this._rotation.pitch;
-    this.camera.rotation.z = this.currentTilt; // Apply strafe tilt
-  }
 
   public takeDamage(amount: number, fromDirection?: Vector3): void {
     if (!this._isAlive) return;
