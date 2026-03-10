@@ -1,8 +1,1 @@
-{
-  "deployed_at": "2026-03-10T04:32:00Z",
-  "method": "npm start",
-  "ports": [3001],
-  "urls": ["http://localhost:3001"],
-  "pid_or_container": "2260837",
-  "status": "running"
-}
+{"deployed_at": "2026-03-10T04:55:36Z", "method": "npm", "ports": [3001], "urls": ["http://localhost:3001"], "pid_or_container": "2265749", "status": "running"}
