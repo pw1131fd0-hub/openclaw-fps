@@ -201,3 +201,15 @@ I'll also check the files in `src/engine` to see if the movement logic is there.
 I'll read `src/game/Player.ts` and `src/eng
 
 ---
+
+## [2026-03-10 09:20:43] [done] 100%
+
+修復 WASD 移動無反應問題（強化 InputManager 對不同瀏覽器 code/key 的相容性與視窗失去焦點處理），並大幅提升移動真實感（新增水平視角搖晃、著地衝擊感、待機呼吸晃動與優化移動慣性）。
+
+> I will read the instructions from `.gemini_instructions.tmp` to understand the task.
+I will check the existing documentation to determine the current project stage and alignment with requirements.
+I will read `docs/PRD.md` to see if it's comprehensive and aligns with the boss's feedback.
+I will read `docs/SA.md` and `docs/SD.md` to ensure the system architecture and design are properly documented.
+I will read `docs/SD.md` to review the detailed design, including API definitions and module interf
+
+---
